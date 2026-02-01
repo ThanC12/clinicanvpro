@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ClinicaProNV.Api/ClinicaProNV.Api.csproj" />
+  <Project Path="ClinicaProNV.Application/ClinicaProNV.Application.csproj" />
+  <Project Path="ClinicaProNV.Domain/ClinicaProNV.Domain.csproj" />
+  <Project Path="ClinicaProNV.Infrastructure/ClinicaProNV.Infrastructure.csproj" />
+</Solution>
