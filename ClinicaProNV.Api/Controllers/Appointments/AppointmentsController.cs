@@ -3,12 +3,27 @@ using ClinicaProNV.Application.Appointments.UseCases;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ClinicaProNV.Api.Controllers;
+namespace ClinicaProNV.Api.Controllers.Appointments;
 
 [ApiController]
 [Route("api/appointments")]
 public sealed class AppointmentsController : ControllerBase
 {
+    // ====== GET ALL (demo) ======
+    [HttpGet]
+    public IActionResult GetAll()
+    {
+        return Ok("List appointments");
+    }
+
+    // ====== CREATE (demo) ======
+    [HttpPost("create")]
+    public IActionResult Create()
+    {
+        return Ok("Create appointment");
+    }
+
+    // ====== SCHEDULE (real) ======
     [HttpPost]
     [Authorize] // ajusta roles si quieres
     public async Task<ActionResult<AppointmentResponse>> Schedule(
@@ -20,8 +35,7 @@ public sealed class AppointmentsController : ControllerBase
         return CreatedAtAction(nameof(Schedule), new { id = result.Id }, result);
     }
 
-
-
+    // ====== CANCEL (real) ======
     [HttpPost("{id:guid}/cancel")]
     [Authorize]
     public async Task<IActionResult> Cancel(

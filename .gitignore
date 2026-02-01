@@ -1,0 +1,17 @@
+## .NET
+bin/
+obj/
+**/bin/
+**/obj/
+
+## Visual Studio
+.vs/
+
+## Rider
+.idea/
+
+## Logs
+*.log
+
+## Local settings
+appsettings.Development.json
