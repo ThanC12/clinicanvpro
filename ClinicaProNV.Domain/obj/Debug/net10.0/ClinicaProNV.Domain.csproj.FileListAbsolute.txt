@@ -5,6 +5,7 @@ C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\Clinic
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\ClinicaProNV.Domain.AssemblyInfoInputs.cache
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\ClinicaProNV.Domain.AssemblyInfo.cs
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\ClinicaProNV.Domain.csproj.CoreCompileInputs.cache
+C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\ClinicaProNV.Domain.sourcelink.json
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\ClinicaProNV.Domain.dll
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\refint\ClinicaProNV.Domain.dll
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\ClinicaProNV.Domain.pdb

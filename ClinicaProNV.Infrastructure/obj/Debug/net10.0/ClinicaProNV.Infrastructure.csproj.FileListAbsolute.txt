@@ -11,6 +11,7 @@ C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ClinicaProNV.Infrastructure.AssemblyInfoInputs.cache
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ClinicaProNV.Infrastructure.AssemblyInfo.cs
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ClinicaProNV.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ClinicaProNV.Infrastructure.sourcelink.json
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ClinicaP.1D1A0479.Up2Date
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ClinicaProNV.Infrastructure.dll
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\refint\ClinicaProNV.Infrastructure.dll

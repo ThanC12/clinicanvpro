@@ -32,6 +32,10 @@ public class ClinicaProNVDbContext : DbContext
     // ================= BILLING =================
     public DbSet<ClinicInvoice> ClinicInvoices => Set<ClinicInvoice>();
     public DbSet<ClinicInvoiceDetail> ClinicInvoiceDetails => Set<ClinicInvoiceDetail>();
+    // ================= Doctors=================
+
+
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -181,6 +181,7 @@ C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Api\obj\Debug\net10.0\ClinicaPr
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Api\obj\Debug\net10.0\ClinicaProNV.Api.csproj.CoreCompileInputs.cache
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Api\obj\Debug\net10.0\ClinicaProNV.Api.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Api\obj\Debug\net10.0\ClinicaProNV.Api.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Api\obj\Debug\net10.0\ClinicaProNV.Api.sourcelink.json
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Api\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Api\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Api\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
