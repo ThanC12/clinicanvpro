@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicaProNV.Api.Controllers.Appointments;
 
 [ApiController]
 [Route("api/appointments")]
+[Authorize]
 public class AppointmentsController : ControllerBase
 {
     [HttpGet]
