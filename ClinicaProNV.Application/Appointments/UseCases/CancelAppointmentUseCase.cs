@@ -1,20 +1,18 @@
 using ClinicaProNV.Application.Appointments.Ports;
-using ClinicaProNV.Domain.Enums;
 
 namespace ClinicaProNV.Application.Appointments.UseCases;
 
 public sealed class CancelAppointmentUseCase
 {
-    private readonly IAppointmentRepository _repo;
-    public CancelAppointmentUseCase(IAppointmentRepository repo) => _repo = repo;
+    private readonly IAppointmentRepository _appointmentRepository;
 
-    public async Task ExecuteAsync(Guid appointmentId, string? notes, CancellationToken ct)
+    public CancelAppointmentUseCase(IAppointmentRepository appointmentRepository)
     {
-        var appt = await _repo.GetByIdAsync(appointmentId, ct)
-            ?? throw new KeyNotFoundException("Cita no existe.");
+        _appointmentRepository = appointmentRepository;
+    }
 
-      
-
-        await _repo.UpdateAsync(appt, ct);
+    public async Task ExecuteAsync(Guid appointmentId, string? notes, CancellationToken ct = default)
+    {
+        await _appointmentRepository.CancelAsync(appointmentId, ct);
     }
 }

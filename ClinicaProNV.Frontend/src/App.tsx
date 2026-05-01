@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "./api/api";
 import { PatientsPage } from "./pages/PatientsPage";
 import { DoctorsPage } from "./pages/DoctorsPage";
+import { AppointmentsPage } from "./pages/AppointmentsPage";
+import { ClinicalNotesPage } from "./pages/ClinicalNotesPage";
+import { PharmacyPage } from "./pages/PharmacyPage";
+import { BillingPage } from "./pages/BillingPage";
+import { UsersPage } from "./pages/UsersPage";
 
 type LoginResponse = {
   userId: string;
@@ -66,6 +71,9 @@ function App() {
     setCurrentPage("dashboard");
     setMessage("");
   }
+  if (loggedEmail && currentPage === "appointments") {
+    return <AppointmentsPage onBack={() => setCurrentPage("dashboard")} />;
+  }
 
   if (loggedEmail && currentPage === "patients") {
     return <PatientsPage onBack={() => setCurrentPage("dashboard")} />;
@@ -73,6 +81,18 @@ function App() {
 
   if (loggedEmail && currentPage === "doctors") {
     return <DoctorsPage onBack={() => setCurrentPage("dashboard")} />;
+  }
+  if (loggedEmail && currentPage === "clinicalNotes") {
+    return <ClinicalNotesPage onBack={() => setCurrentPage("dashboard")} />;
+  }
+  if (loggedEmail && currentPage === "pharmacy") {
+    return <PharmacyPage onBack={() => setCurrentPage("dashboard")} />;
+  }
+  if (loggedEmail && currentPage === "billing") {
+    return <BillingPage onBack={() => setCurrentPage("dashboard")} />;
+  }
+  if (loggedEmail && currentPage === "users") {
+    return <UsersPage onBack={() => setCurrentPage("dashboard")} />;
   }
 
   if (loggedEmail) {
@@ -107,26 +127,31 @@ function App() {
           <ModuleCard
             title="Citas"
             description="Crear y consultar citas médicas"
+            onClick={() => setCurrentPage("appointments")}
           />
 
           <ModuleCard
             title="Historias clínicas"
             description="Registrar notas y antecedentes"
+            onClick={() => setCurrentPage("clinicalNotes")}
           />
 
           <ModuleCard
             title="Farmacia"
             description="Medicamentos, stock y ventas"
+            onClick={() => setCurrentPage("pharmacy")}
           />
 
           <ModuleCard
             title="Facturación"
             description="Cobros y comprobantes clínicos"
+            onClick={() => setCurrentPage("billing")}
           />
 
           <ModuleCard
             title="Usuarios"
             description="Roles y accesos del sistema"
+            onClick={() => setCurrentPage("users")}
           />
         </section>
       </main>

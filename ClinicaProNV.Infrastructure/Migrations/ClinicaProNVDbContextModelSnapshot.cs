@@ -17,7 +17,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -39,7 +39,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ClinicInvoices");
+                    b.ToTable("ClinicInvoices", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Billing.ClinicInvoiceDetail", b =>
@@ -68,7 +68,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasIndex("ClinicInvoiceId");
 
-                    b.ToTable("ClinicInvoiceDetails");
+                    b.ToTable("ClinicInvoiceDetails", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Entities.Appointment", b =>
@@ -91,7 +91,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Appointments");
+                    b.ToTable("Appointments", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Entities.ClinicalNote", b =>
@@ -112,7 +112,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ClinicalNotes");
+                    b.ToTable("ClinicalNotes", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Entities.Doctor", b =>
@@ -134,7 +134,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Doctors");
+                    b.ToTable("Doctors", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Entities.Patient", b =>
@@ -156,7 +156,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Patients");
+                    b.ToTable("Patients", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Entities.Role", b =>
@@ -177,7 +177,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Entities.User", b =>
@@ -202,7 +202,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Entities.UserRole", b =>
@@ -217,7 +217,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Pharmacy.Medicine", b =>
@@ -244,7 +244,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Medicines");
+                    b.ToTable("Medicines", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Pharmacy.PharmacyInvoice", b =>
@@ -264,7 +264,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PharmacyInvoices");
+                    b.ToTable("PharmacyInvoices", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Pharmacy.PharmacyInvoiceDetail", b =>
@@ -295,7 +295,7 @@ namespace ClinicaProNV.Infrastructure.Migrations
 
                     b.HasIndex("PharmacyInvoiceId");
 
-                    b.ToTable("PharmacyInvoiceDetails");
+                    b.ToTable("PharmacyInvoiceDetails", (string)null);
                 });
 
             modelBuilder.Entity("ClinicaProNV.Domain.Billing.ClinicInvoiceDetail", b =>

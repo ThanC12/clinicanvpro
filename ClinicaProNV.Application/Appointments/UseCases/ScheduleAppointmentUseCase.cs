@@ -5,28 +5,26 @@ using ClinicaProNV.Domain.Entities;
 namespace ClinicaProNV.Application.Appointments.UseCases;
 
 public sealed class ScheduleAppointmentUseCase
-
 {
-    private readonly IAppointmentRepository _repo;
+    private readonly IAppointmentRepository _appointmentRepository;
 
-    public ScheduleAppointmentUseCase(IAppointmentRepository repo)
+    public ScheduleAppointmentUseCase(IAppointmentRepository appointmentRepository)
     {
-        _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+        _appointmentRepository = appointmentRepository;
     }
 
     public async Task<AppointmentResponse> ExecuteAsync(
-        ScheduleAppointmentRequest req,
-        CancellationToken ct)
+        ScheduleAppointmentRequest request,
+        CancellationToken ct = default)
     {
-        if (req is null) throw new ArgumentNullException(nameof(req));
-        if (req.PatientId == Guid.Empty) throw new ArgumentException("PatientId es requerido.", nameof(req.PatientId));
+        var appointment = new Appointment(
+            request.PatientId,
+            request.DoctorId,
+            request.Date,
+            request.Reason
+        );
 
-        // Si quieres bloquear fechas en el pasado (opcional):
-        // if (req.Date < DateTime.UtcNow) throw new ArgumentException("La fecha de la cita no puede ser en el pasado.", nameof(req.Date));
-
-        var appointment = new Appointment(req.PatientId, req.Date);
-
-        await _repo.AddAsync(appointment, ct);
+        await _appointmentRepository.AddAsync(appointment, ct);
 
         return new AppointmentResponse(
             appointment.Id,

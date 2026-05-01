@@ -1,11 +1,12 @@
 using ClinicaProNV.Application.Appointments.Ports;
 using ClinicaProNV.Domain.Entities;
+using ClinicaProNV.Domain.Enums;
 using ClinicaProNV.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClinicaProNV.Infrastructure.Appointments;
 
-public sealed class AppointmentRepository : IAppointmentRepository
+public class AppointmentRepository : IAppointmentRepository
 {
     private readonly ClinicaProNVDbContext _db;
 
@@ -34,4 +35,33 @@ public sealed class AppointmentRepository : IAppointmentRepository
         _db.Appointments.Update(appointment);
         await _db.SaveChangesAsync(ct);
     }
+
+    public async Task CancelAsync(Guid appointmentId, CancellationToken ct)
+    {
+        var appointment = await _db.Appointments
+            .FirstOrDefaultAsync(x => x.Id == appointmentId, ct);
+
+        if (appointment is null)
+        {
+            throw new InvalidOperationException("La cita no existe.");
+        }
+
+        appointment.Cancel();
+
+        _db.Appointments.Update(appointment);
+        await _db.SaveChangesAsync(ct);
+    }
+    public async Task DeleteAsync(Guid appointmentId, CancellationToken ct)
+{
+    var appointment = await _db.Appointments
+        .FirstOrDefaultAsync(x => x.Id == appointmentId, ct);
+
+    if (appointment is null)
+    {
+        throw new InvalidOperationException("La cita no existe.");
+    }
+
+    _db.Appointments.Remove(appointment);
+    await _db.SaveChangesAsync(ct);
+}
 }

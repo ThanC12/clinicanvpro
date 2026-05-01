@@ -65,6 +65,7 @@ Entities/
  Category.cs
  ClinicalNote.cs
  Doctor.cs
+ Medicine.cs
  Patient.cs
  Product.cs
  Role.cs

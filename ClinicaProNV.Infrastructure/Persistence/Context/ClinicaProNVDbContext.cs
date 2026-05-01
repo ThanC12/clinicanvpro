@@ -8,10 +8,9 @@ namespace ClinicaProNV.Infrastructure.Persistence.Context;
 public class ClinicaProNVDbContext : DbContext
 {
     public ClinicaProNVDbContext(DbContextOptions<ClinicaProNVDbContext> options)
-        : base(options) { }
-
-
-
+        : base(options)
+    {
+    }
 
     // ================= AUTH =================
     public DbSet<User> Users => Set<User>();
@@ -25,17 +24,15 @@ public class ClinicaProNVDbContext : DbContext
     public DbSet<ClinicalNote> ClinicalNotes => Set<ClinicalNote>();
 
     // ================= PHARMACY =================
-    public DbSet<Medicine> Medicines => Set<Medicine>();
+    public DbSet<ClinicaProNV.Domain.Pharmacy.Medicine> Medicines 
+        => Set<ClinicaProNV.Domain.Pharmacy.Medicine>();
+
     public DbSet<PharmacyInvoice> PharmacyInvoices => Set<PharmacyInvoice>();
     public DbSet<PharmacyInvoiceDetail> PharmacyInvoiceDetails => Set<PharmacyInvoiceDetail>();
 
     // ================= BILLING =================
     public DbSet<ClinicInvoice> ClinicInvoices => Set<ClinicInvoice>();
     public DbSet<ClinicInvoiceDetail> ClinicInvoiceDetails => Set<ClinicInvoiceDetail>();
-    // ================= Doctors=================
-
-
-
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

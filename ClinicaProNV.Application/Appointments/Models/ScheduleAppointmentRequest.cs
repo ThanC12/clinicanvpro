@@ -2,5 +2,7 @@ namespace ClinicaProNV.Application.Appointments.Models;
 
 public sealed record ScheduleAppointmentRequest(
     Guid PatientId,
-    DateTime Date
+    Guid DoctorId,
+    DateTime Date,
+    string Reason
 );

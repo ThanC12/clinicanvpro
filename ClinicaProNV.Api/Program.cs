@@ -1,9 +1,12 @@
 // Program.cs (ClinicaProNV.Api)
 
 using ClinicaProNV.Api.Middlewares;
+using ClinicaProNV.Application.Appointments.Ports;
+using ClinicaProNV.Application.Appointments.UseCases;
 using ClinicaProNV.Application.Interfaces.Auth;
 using ClinicaProNV.Application.Security;
 using ClinicaProNV.Application.UseCases.Auth;
+using ClinicaProNV.Infrastructure.Appointments;
 using ClinicaProNV.Infrastructure.Persistence.Context;
 using ClinicaProNV.Infrastructure.Repositories.Auth;
 using ClinicaProNV.Infrastructure.Security;
@@ -18,30 +21,37 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-// CORS para permitir conexión desde React/Vite
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("Frontend", policy =>
-    {
-        policy.WithOrigins()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
 // DB
 builder.Services.AddDbContext<ClinicaProNVDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
-// DI Repos + Security
+// CORS para React/Vite
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// DI Repos Auth + Security
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
-// DI UseCases
+// DI Repos Appointments
+builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+
+// DI UseCases Auth
 builder.Services.AddScoped<RegisterUseCase>();
 builder.Services.AddScoped<LoginUseCase>();
+
+// DI UseCases Appointments
+builder.Services.AddScoped<ScheduleAppointmentUseCase>();
+builder.Services.AddScoped<CancelAppointmentUseCase>();
 
 // JWT Settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -78,6 +88,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // Swagger con Bearer
+builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -112,6 +124,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -128,7 +141,7 @@ app.UseSwaggerUI();
 
 // app.UseHttpsRedirection();
 
-app.UseCors();
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

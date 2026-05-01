@@ -55,9 +55,18 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 /warnaserror+:NU1605,SYSLIB0011
 
 [sourceFiles]
+Contracts/ClinicalNotes/
+ CreateClinicalNoteRequest.cs
+ UpdateClinicalNoteRequest.cs
+Contracts/ClinicInvoices/
+ CreateClinicInvoiceDetailRequest.cs
+ CreateClinicInvoiceRequest.cs
 Contracts/Doctors/
  CreateDoctorRequest.cs
  UpdateDoctorRequest.cs
+Contracts/Medicines/
+ CreateMedicineRequest.cs
+ UpdateMedicineRequest.cs
 Contracts/Patients/
  CreatePatientRequest.cs
  UpdatePatientRequest.cs
@@ -65,8 +74,10 @@ Controllers/
  Admin/AdminController.cs
  Appointments/AppointmentsController.cs
  Auth/AuthController.cs
- Billing/ClinicInvoiceController.cs
+ ClinicalNotes/ClinicalNotesController.cs
+ ClinicInvoices/ClinicInvoicesController.cs
  Doctors/DoctorsController.cs
+ Medicines/MedicinesController.cs
  Patients/PatientsController.cs
  Pharmacy/PharmacyInvoiceController.cs
 Middlewares/ExceptionHandlingMiddleware.cs
@@ -407,9 +418,9 @@ Program.cs
  microsoft.codeanalysis.workspaces.msbuild/4.14.0/lib/net9.0/
   Microsoft.CodeAnalysis.ExternalAccess.RazorCompiler.dll
   Microsoft.CodeAnalysis.Workspaces.MSBuild.dll
- microsoft.entityframeworkcore.abstractions/10.0.0/lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll
- microsoft.entityframeworkcore.relational/10.0.0/lib/net10.0/Microsoft.EntityFrameworkCore.Relational.dll
- microsoft.entityframeworkcore/10.0.0/lib/net10.0/Microsoft.EntityFrameworkCore.dll
+ microsoft.entityframeworkcore.abstractions/10.0.4/lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll
+ microsoft.entityframeworkcore.relational/10.0.4/lib/net10.0/Microsoft.EntityFrameworkCore.Relational.dll
+ microsoft.entityframeworkcore/10.0.4/lib/net10.0/Microsoft.EntityFrameworkCore.dll
  microsoft.extensions.dependencymodel/10.0.0/lib/net10.0/Microsoft.Extensions.DependencyModel.dll
  microsoft.identitymodel.abstractions/8.15.0/lib/net10.0/Microsoft.IdentityModel.Abstractions.dll
  microsoft.identitymodel.jsonwebtokens/8.15.0/lib/net10.0/Microsoft.IdentityModel.JsonWebTokens.dll
@@ -421,8 +432,8 @@ Program.cs
  microsoft.openapi/1.6.22/lib/netstandard2.0/Microsoft.OpenApi.dll
  mono.texttemplating/3.0.0/lib/net6.0/Mono.TextTemplating.dll
  newtonsoft.json/13.0.3/lib/net6.0/Newtonsoft.Json.dll
- npgsql.entityframeworkcore.postgresql/10.0.0/lib/net10.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll
- npgsql/10.0.0/lib/net10.0/Npgsql.dll
+ npgsql.entityframeworkcore.postgresql/10.0.1/lib/net10.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll
+ npgsql/10.0.2/lib/net10.0/Npgsql.dll
  swashbuckle.aspnetcore.swagger/6.5.0/lib/net7.0/Swashbuckle.AspNetCore.Swagger.dll
  swashbuckle.aspnetcore.swaggergen/6.5.0/lib/net7.0/Swashbuckle.AspNetCore.SwaggerGen.dll
  swashbuckle.aspnetcore.swaggerui/6.5.0/lib/net7.0/Swashbuckle.AspNetCore.SwaggerUI.dll
@@ -471,7 +482,7 @@ Program.cs
 <NUGET>/microsoft.codeanalysis.analyzers/3.11.0/analyzers/dotnet/cs/
  Microsoft.CodeAnalysis.Analyzers.dll
  Microsoft.CodeAnalysis.CSharp.Analyzers.dll
-<NUGET>/microsoft.entityframeworkcore.analyzers/10.0.0/analyzers/dotnet/cs/Microsoft.EntityFrameworkCore.Analyzers.dll
+<NUGET>/microsoft.entityframeworkcore.analyzers/10.0.4/analyzers/dotnet/cs/Microsoft.EntityFrameworkCore.Analyzers.dll
 
 [analyzerConfigFiles]
 <DOTNET>/sdk/10.0.107/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
