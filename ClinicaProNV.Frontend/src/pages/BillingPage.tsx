@@ -37,6 +37,17 @@ type ClinicInvoiceFull = ClinicInvoice & {
   details: ClinicInvoiceDetail[];
 };
 
+type DeletedClinicInvoice = {
+  invoiceId: string;
+  patientId: string;
+  patientName: string;
+  total: number;
+  deletedByUserId: string;
+  deletedByEmail: string;
+  reason: string;
+  deletedAtUtc: string;
+};
+
 type BillingPageProps = {
   onBack: () => void;
 };
@@ -71,6 +82,7 @@ const serviceCatalog = [
 export function BillingPage({ onBack }: BillingPageProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [invoices, setInvoices] = useState<ClinicInvoice[]>([]);
+  const [deletedInvoices, setDeletedInvoices] = useState<DeletedClinicInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<ClinicInvoiceFull | null>(null);
   const [search, setSearch] = useState("");
 
@@ -107,9 +119,11 @@ export function BillingPage({ onBack }: BillingPageProps) {
 
       const patientsData = await apiRequest<Patient[]>("/patients");
       const invoicesData = await apiRequest<ClinicInvoice[]>("/clinic-invoices");
+      const deletedInvoicesData = await apiRequest<DeletedClinicInvoice[]>("/clinic-invoices/deleted");
 
       setPatients(patientsData);
       setInvoices(invoicesData);
+      setDeletedInvoices(deletedInvoicesData);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al cargar datos");
     } finally {
@@ -214,7 +228,15 @@ export function BillingPage({ onBack }: BillingPageProps) {
   }
 
   async function handleDelete(id: string) {
-    const confirmed = window.confirm("¿Seguro que deseas eliminar esta factura?");
+    const reason = window.prompt(
+      "Motivo de anulación. Ejemplos: cliente pidió sin datos, error en paciente, factura no válida."
+    );
+
+    if (reason === null) {
+      return;
+    }
+
+    const confirmed = window.confirm("¿Seguro que deseas anular esta factura?");
 
     if (!confirmed) {
       return;
@@ -225,9 +247,10 @@ export function BillingPage({ onBack }: BillingPageProps) {
 
       await apiRequest<void>(`/clinic-invoices/${id}`, {
         method: "DELETE",
+        body: JSON.stringify({ reason }),
       });
 
-      setMessage("Factura eliminada correctamente.");
+      setMessage("Factura anulada correctamente.");
       await loadData();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al eliminar factura");
@@ -490,10 +513,41 @@ export function BillingPage({ onBack }: BillingPageProps) {
                         style={styles.deleteButton}
                         onClick={() => handleDelete(invoice.id)}
                       >
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
+                      Anular
+                    </button>
+                  </div>
+                </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>Facturas clínicas anuladas</h2>
+
+        {deletedInvoices.length === 0 && <p>No hay facturas anuladas.</p>}
+
+        {deletedInvoices.length > 0 && (
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Paciente</th>
+                <th style={styles.th}>Total</th>
+                <th style={styles.th}>Anulada por</th>
+                <th style={styles.th}>Fecha</th>
+                <th style={styles.th}>Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deletedInvoices.map((invoice) => (
+                <tr key={invoice.invoiceId}>
+                  <td style={styles.td}>{invoice.patientName ?? invoice.patientId}</td>
+                  <td style={styles.td}>${invoice.total.toFixed(2)}</td>
+                  <td style={styles.td}>{invoice.deletedByEmail}</td>
+                  <td style={styles.td}>{new Date(invoice.deletedAtUtc).toLocaleString()}</td>
+                  <td style={styles.td}>{invoice.reason}</td>
                 </tr>
               ))}
             </tbody>

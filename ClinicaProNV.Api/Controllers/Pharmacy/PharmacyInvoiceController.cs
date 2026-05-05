@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using ClinicaProNV.Domain.Pharmacy;
+using ClinicaProNV.Domain.Entities;
 using ClinicaProNV.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ClinicaProNV.Api.Services.WhatsApp;
+using System.Security.Claims;
 
 namespace ClinicaProNV.Api.Controllers.Pharmacy;
 
@@ -18,6 +20,7 @@ public class PharmacyInvoiceController : ControllerBase
         CancellationToken ct)
     {
         var invoices = await db.PharmacyInvoices
+            .Where(i => !i.IsDeleted)
             .OrderByDescending(i => i.CreatedAtUtc)
             .Select(i => new
             {
@@ -35,6 +38,30 @@ public class PharmacyInvoiceController : ControllerBase
             .ToListAsync(ct);
 
         return Ok(invoices);
+    }
+
+    [HttpGet("deleted")]
+    public async Task<IActionResult> GetDeleted(
+        [FromServices] ClinicaProNVDbContext db,
+        CancellationToken ct)
+    {
+        var deletedInvoices = await db.InvoiceDeletionLogs
+            .Where(x => x.InvoiceType == "Pharmacy")
+            .OrderByDescending(x => x.DeletedAtUtc)
+            .Select(x => new
+            {
+                x.InvoiceId,
+                x.PatientId,
+                x.PatientName,
+                x.Total,
+                x.DeletedByUserId,
+                x.DeletedByEmail,
+                x.Reason,
+                x.DeletedAtUtc
+            })
+            .ToListAsync(ct);
+
+        return Ok(deletedInvoices);
     }
 
     [HttpPost]
@@ -121,7 +148,7 @@ public class PharmacyInvoiceController : ControllerBase
         CancellationToken ct)
     {
         var invoice = await db.PharmacyInvoices
-            .Where(i => i.Id == id)
+            .Where(i => i.Id == id && !i.IsDeleted)
             .Select(i => new
             {
                 i.Id,
@@ -161,6 +188,7 @@ public class PharmacyInvoiceController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(
         Guid id,
+        [FromBody] DeletePharmacyInvoiceRequest request,
         [FromServices] ClinicaProNVDbContext db,
         CancellationToken ct)
     {
@@ -171,15 +199,53 @@ public class PharmacyInvoiceController : ControllerBase
             return NotFound("Factura de farmacia no encontrada.");
         }
 
-        var details = await db.PharmacyInvoiceDetails
-            .Where(d => d.PharmacyInvoiceId == id)
-            .ToListAsync(ct);
+        if (invoice.IsDeleted)
+        {
+            return Conflict("La factura ya fue anulada.");
+        }
 
-        db.PharmacyInvoiceDetails.RemoveRange(details);
-        db.PharmacyInvoices.Remove(invoice);
+        var deletedByUserId = GetCurrentUserId();
+        var deletedByEmail = GetCurrentUserEmail();
+        var reason = string.IsNullOrWhiteSpace(request?.Reason)
+            ? "Anulación sin motivo registrado"
+            : request.Reason.Trim();
+
+        var patient = await db.Patients
+            .Where(p => p.Id == invoice.PatientId)
+            .Select(p => new { p.FullName })
+            .FirstOrDefaultAsync(ct);
+
+        invoice.MarkDeleted(deletedByUserId, deletedByEmail, reason);
+
+        db.InvoiceDeletionLogs.Add(new InvoiceDeletionLog(
+            "Pharmacy",
+            invoice.Id,
+            invoice.PatientId,
+            patient?.FullName ?? "Sin nombre",
+            invoice.Total,
+            deletedByUserId,
+            deletedByEmail,
+            reason));
+
         await db.SaveChangesAsync(ct);
 
         return NoContent();
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+
+        return Guid.TryParse(raw, out var userId) ? userId : Guid.Empty;
+    }
+
+    private string GetCurrentUserEmail()
+    {
+        return User.FindFirstValue(ClaimTypes.Email)
+            ?? User.FindFirstValue("email")
+            ?? User.Identity?.Name
+            ?? "Desconocido";
     }
 
     public sealed record CreatePharmacyInvoiceRequest(
@@ -189,4 +255,6 @@ public class PharmacyInvoiceController : ControllerBase
     public sealed record CreatePharmacyInvoiceItemRequest(
         Guid MedicineId,
         int Quantity);
+
+    public sealed record DeletePharmacyInvoiceRequest(string? Reason);
 }

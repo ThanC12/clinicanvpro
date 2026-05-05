@@ -36,6 +36,7 @@ public class ClinicaProNVDbContext : DbContext
     // ================= BILLING =================
     public DbSet<ClinicInvoice> ClinicInvoices => Set<ClinicInvoice>();
     public DbSet<ClinicInvoiceDetail> ClinicInvoiceDetails => Set<ClinicInvoiceDetail>();
+    public DbSet<InvoiceDeletionLog> InvoiceDeletionLogs => Set<InvoiceDeletionLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +69,26 @@ public class ClinicaProNVDbContext : DbContext
             e.HasOne(x => x.Role)
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(x => x.RoleId);
+        });
+
+        modelBuilder.Entity<ClinicInvoice>(e =>
+        {
+            e.Property(x => x.DeletedByEmail).IsRequired();
+            e.Property(x => x.DeletionReason).IsRequired();
+        });
+
+        modelBuilder.Entity<PharmacyInvoice>(e =>
+        {
+            e.Property(x => x.DeletedByEmail).IsRequired();
+            e.Property(x => x.DeletionReason).IsRequired();
+        });
+
+        modelBuilder.Entity<InvoiceDeletionLog>(e =>
+        {
+            e.Property(x => x.InvoiceType).IsRequired();
+            e.Property(x => x.PatientName).IsRequired();
+            e.Property(x => x.DeletedByEmail).IsRequired();
+            e.Property(x => x.Reason).IsRequired();
         });
     }
 }

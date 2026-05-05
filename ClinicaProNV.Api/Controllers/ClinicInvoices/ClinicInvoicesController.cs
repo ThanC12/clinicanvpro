@@ -1,10 +1,12 @@
 using ClinicaProNV.Api.Contracts.ClinicInvoices;
 using ClinicaProNV.Domain.Billing;
+using ClinicaProNV.Domain.Entities;
 using ClinicaProNV.Infrastructure.Persistence.Context;
 using ClinicaProNV.Api.Services.WhatsApp;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClinicaProNV.Api.Controllers.ClinicInvoices;
 
@@ -24,6 +26,7 @@ public class ClinicInvoicesController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var invoices = await _db.ClinicInvoices
+            .Where(i => !i.IsDeleted)
             .OrderByDescending(i => i.CreatedAtUtc)
             .Select(i => new
             {
@@ -51,11 +54,33 @@ public class ClinicInvoicesController : ControllerBase
         return Ok(invoices);
     }
 
+    [HttpGet("deleted")]
+    public async Task<IActionResult> GetDeleted(CancellationToken ct)
+    {
+        var deletedInvoices = await _db.InvoiceDeletionLogs
+            .Where(x => x.InvoiceType == "Clinic")
+            .OrderByDescending(x => x.DeletedAtUtc)
+            .Select(x => new
+            {
+                x.InvoiceId,
+                x.PatientId,
+                x.PatientName,
+                x.Total,
+                x.DeletedByUserId,
+                x.DeletedByEmail,
+                x.Reason,
+                x.DeletedAtUtc
+            })
+            .ToListAsync(ct);
+
+        return Ok(deletedInvoices);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var invoice = await _db.ClinicInvoices
-            .Where(i => i.Id == id)
+            .Where(i => i.Id == id && !i.IsDeleted)
             .Select(i => new
             {
                 i.Id,
@@ -182,7 +207,10 @@ public class ClinicInvoicesController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(
+        Guid id,
+        [FromBody] DeleteClinicInvoiceRequest request,
+        CancellationToken ct)
     {
         var invoice = await _db.ClinicInvoices
             .FirstOrDefaultAsync(i => i.Id == id, ct);
@@ -192,15 +220,54 @@ public class ClinicInvoicesController : ControllerBase
             return NotFound("Factura clínica no encontrada.");
         }
 
-        var details = await _db.ClinicInvoiceDetails
-            .Where(d => d.ClinicInvoiceId == id)
-            .ToListAsync(ct);
+        if (invoice.IsDeleted)
+        {
+            return Conflict("La factura ya fue anulada.");
+        }
 
-        _db.ClinicInvoiceDetails.RemoveRange(details);
-        _db.ClinicInvoices.Remove(invoice);
+        var deletedByUserId = GetCurrentUserId();
+        var deletedByEmail = GetCurrentUserEmail();
+        var reason = string.IsNullOrWhiteSpace(request?.Reason)
+            ? "Anulación sin motivo registrado"
+            : request.Reason.Trim();
+
+        var patient = await _db.Patients
+            .Where(p => p.Id == invoice.PatientId)
+            .Select(p => new { p.FullName })
+            .FirstOrDefaultAsync(ct);
+
+        invoice.MarkDeleted(deletedByUserId, deletedByEmail, reason);
+
+        _db.InvoiceDeletionLogs.Add(new InvoiceDeletionLog(
+            "Clinic",
+            invoice.Id,
+            invoice.PatientId,
+            patient?.FullName ?? "Sin nombre",
+            invoice.Total,
+            deletedByUserId,
+            deletedByEmail,
+            reason));
 
         await _db.SaveChangesAsync(ct);
 
         return NoContent();
     }
+
+    private Guid GetCurrentUserId()
+    {
+        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+
+        return Guid.TryParse(raw, out var userId) ? userId : Guid.Empty;
+    }
+
+    private string GetCurrentUserEmail()
+    {
+        return User.FindFirstValue(ClaimTypes.Email)
+            ?? User.FindFirstValue("email")
+            ?? User.Identity?.Name
+            ?? "Desconocido";
+    }
+
+    public sealed record DeleteClinicInvoiceRequest(string? Reason);
 }

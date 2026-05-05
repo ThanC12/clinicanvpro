@@ -30,6 +30,17 @@ type PharmacyInvoice = {
   detailsCount: number;
 };
 
+type DeletedPharmacyInvoice = {
+  invoiceId: string;
+  patientId: string;
+  patientName: string;
+  total: number;
+  deletedByUserId: string;
+  deletedByEmail: string;
+  reason: string;
+  deletedAtUtc: string;
+};
+
 type PharmacyPageProps = {
   onBack: () => void;
 };
@@ -38,6 +49,7 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [invoices, setInvoices] = useState<PharmacyInvoice[]>([]);
+  const [deletedInvoices, setDeletedInvoices] = useState<DeletedPharmacyInvoice[]>([]);
   const [name, setName] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -61,9 +73,11 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
       const medicinesData = await apiRequest<Medicine[]>("/medicines");
       const patientsData = await apiRequest<Patient[]>("/patients");
       const invoicesData = await apiRequest<PharmacyInvoice[]>("/pharmacy/invoices");
+      const deletedInvoicesData = await apiRequest<DeletedPharmacyInvoice[]>("/pharmacy/invoices/deleted");
       setMedicines(medicinesData);
       setPatients(patientsData);
       setInvoices(invoicesData);
+      setDeletedInvoices(deletedInvoicesData);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al cargar farmacia");
     } finally {
@@ -234,7 +248,15 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
   }
 
   async function handleDeleteInvoice(id: string) {
-    const confirmed = window.confirm("¿Seguro que deseas eliminar esta venta?");
+    const reason = window.prompt(
+      "Motivo de anulación. Ejemplos: cliente pidió sin datos, error en medicamento, factura no válida."
+    );
+
+    if (reason === null) {
+      return;
+    }
+
+    const confirmed = window.confirm("¿Seguro que deseas anular esta venta?");
 
     if (!confirmed) {
       return;
@@ -245,9 +267,10 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
 
       await apiRequest<void>(`/pharmacy/invoices/${id}`, {
         method: "DELETE",
+        body: JSON.stringify({ reason }),
       });
 
-      setMessage("Venta eliminada correctamente.");
+      setMessage("Venta anulada correctamente.");
       await loadData();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al eliminar venta");
@@ -482,9 +505,40 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
                       style={styles.deleteButton}
                       onClick={() => handleDeleteInvoice(invoice.id)}
                     >
-                      Eliminar
+                      Anular
                     </button>
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>Ventas de farmacia anuladas</h2>
+
+        {deletedInvoices.length === 0 && <p>No hay ventas anuladas.</p>}
+
+        {deletedInvoices.length > 0 && (
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Paciente</th>
+                <th style={styles.th}>Total</th>
+                <th style={styles.th}>Anulada por</th>
+                <th style={styles.th}>Fecha</th>
+                <th style={styles.th}>Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deletedInvoices.map((invoice) => (
+                <tr key={invoice.invoiceId}>
+                  <td style={styles.td}>{invoice.patientName ?? invoice.patientId}</td>
+                  <td style={styles.td}>${invoice.total.toFixed(2)}</td>
+                  <td style={styles.td}>{invoice.deletedByEmail}</td>
+                  <td style={styles.td}>{new Date(invoice.deletedAtUtc).toLocaleString()}</td>
+                  <td style={styles.td}>{invoice.reason}</td>
                 </tr>
               ))}
             </tbody>
