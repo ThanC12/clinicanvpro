@@ -71,7 +71,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
       <section style={styles.header}>
         <div>
           <h1 style={styles.title}>Dashboard</h1>
-          <p style={styles.subtitle}>Ventas, facturas y productos con más movimiento</p>
+          <p style={styles.subtitle}>Clínica y farmacia con indicadores separados</p>
         </div>
       </section>
 
@@ -81,10 +81,10 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
       {sales && (
         <>
           <section style={styles.kpiGrid}>
-            <MetricCard title="Vendido hoy" value={`$${sales.today.total.toFixed(2)}`} />
-            <MetricCard title="Clínica hoy" value={`$${sales.today.clinicTotal.toFixed(2)}`} />
-            <MetricCard title="Farmacia hoy" value={`$${sales.today.pharmacyTotal.toFixed(2)}`} />
-            <MetricCard title="Facturas hoy" value={String(sales.today.invoices)} />
+            <MetricCard title="Total vendido hoy" value={`$${sales.today.total.toFixed(2)}`} />
+            <MetricCard title="Facturación clínica hoy" value={`$${sales.today.clinicTotal.toFixed(2)}`} />
+            <MetricCard title="Ventas de farmacia hoy" value={`$${sales.today.pharmacyTotal.toFixed(2)}`} />
+            <MetricCard title="Facturas emitidas hoy" value={String(sales.today.invoices)} />
           </section>
 
           <section style={styles.cardGrid}>
@@ -111,25 +111,25 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               <h2 style={styles.sectionTitle}>Dónde se guarda</h2>
               <div style={styles.quickActions}>
                 <button style={styles.actionButton} onClick={() => onNavigate("/facturacion")}>
-                  Facturas clínicas
+                  Facturación clínica
                 </button>
                 <button style={styles.actionButton} onClick={() => onNavigate("/farmacia")}>
-                  Ventas de farmacia
+                  Farmacia
                 </button>
                 <button style={styles.actionButton} onClick={() => onNavigate("/pacientes")}>
                   Pacientes y fichas técnicas
                 </button>
               </div>
               <p style={styles.helpText}>
-                Las fichas técnicas están en Pacientes. El doctor entra a Pacientes,
-                selecciona el paciente en “Ficha clínica / técnica” y ve o agrega las fichas.
+                La facturación clínica vive en Facturación. La farmacia guarda sus ventas aparte.
+                Las fichas técnicas están en Pacientes, dentro de “Ficha clínica / técnica”.
               </p>
             </article>
           </section>
 
           <section style={styles.cardGrid}>
             <RankingCard
-              title="Servicios más vendidos"
+              title="Servicios clínicos más vendidos"
               rows={sales.topClinicalServices.map((item) => ({
                 id: item.name,
                 name: item.name,
@@ -139,7 +139,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             />
 
             <RankingCard
-              title="Medicinas más vendidas"
+              title="Medicinas de farmacia más vendidas"
               rows={sales.topMedicines.map((item) => ({
                 id: item.medicineId,
                 name: item.name ?? item.medicineId,
@@ -151,8 +151,8 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
           <section style={styles.kpiGrid}>
             <MetricCard title="Total histórico" value={`$${sales.allTime.total.toFixed(2)}`} />
-            <MetricCard title="Clínica histórico" value={`$${sales.allTime.clinicTotal.toFixed(2)}`} />
-            <MetricCard title="Farmacia histórico" value={`$${sales.allTime.pharmacyTotal.toFixed(2)}`} />
+            <MetricCard title="Histórico clínico" value={`$${sales.allTime.clinicTotal.toFixed(2)}`} />
+            <MetricCard title="Histórico farmacia" value={`$${sales.allTime.pharmacyTotal.toFixed(2)}`} />
           </section>
         </>
       )}

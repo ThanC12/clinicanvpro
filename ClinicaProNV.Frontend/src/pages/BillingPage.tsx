@@ -311,8 +311,8 @@ export function BillingPage({ onBack }: BillingPageProps) {
     <main style={styles.page}>
       <section style={styles.header}>
         <div>
-          <h1 style={styles.title}>Facturación</h1>
-          <p style={styles.subtitle}>Cobros y comprobantes clínicos</p>
+          <h1 style={styles.title}>Facturación clínica</h1>
+          <p style={styles.subtitle}>Cobros, operaciones y comprobantes de la clínica</p>
         </div>
 
         <button style={styles.backButton} onClick={onBack}>
@@ -323,7 +323,7 @@ export function BillingPage({ onBack }: BillingPageProps) {
       <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Crear factura clínica</h2>
 
-        {loading && <p>Cargando pacientes y facturas...</p>}
+        {loading && <p>Cargando pacientes y facturas clínicas...</p>}
 
         {!loading && (
           <form onSubmit={handleSubmit} style={styles.form}>
@@ -441,7 +441,7 @@ export function BillingPage({ onBack }: BillingPageProps) {
       </section>
 
       <section style={styles.card}>
-        <h2 style={styles.sectionTitle}>Listado de facturas</h2>
+        <h2 style={styles.sectionTitle}>Listado de facturas clínicas</h2>
 
         <input
           style={styles.searchInput}
@@ -450,14 +450,14 @@ export function BillingPage({ onBack }: BillingPageProps) {
           placeholder="Buscar por paciente o ID..."
         />
 
-        {!loading && filteredInvoices.length === 0 && <p>No hay facturas registradas.</p>}
+        {!loading && filteredInvoices.length === 0 && <p>No hay facturas clínicas registradas.</p>}
 
         {!loading && filteredInvoices.length > 0 && (
           <table style={styles.table}>
             <thead>
               <tr>
                 <th style={styles.th}>Paciente</th>
-                <th style={styles.th}>Total</th>
+                <th style={styles.th}>Total clínico</th>
                 <th style={styles.th}>Detalles</th>
                 <th style={styles.th}>Fecha</th>
                 <th style={styles.th}>Acciones</th>
@@ -504,7 +504,7 @@ export function BillingPage({ onBack }: BillingPageProps) {
       {selectedInvoice && (
         <section style={styles.invoiceDetailCard}>
           <div style={styles.detailsHeader}>
-            <h2 style={styles.sectionTitle}>Detalle de factura</h2>
+            <h2 style={styles.sectionTitle}>Detalle de factura clínica</h2>
             <div style={styles.actions}>
               <button style={styles.addButton} type="button" onClick={handlePrintInvoice}>
                 Imprimir

@@ -277,7 +277,7 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
       <section style={styles.header}>
         <div>
           <h1 style={styles.title}>Farmacia</h1>
-          <p style={styles.subtitle}>Gestión de medicamentos, precios y stock</p>
+          <p style={styles.subtitle}>Gestión de medicamentos, stock y ventas de farmacia</p>
         </div>
 
         <button style={styles.backButton} onClick={onBack}>
@@ -286,7 +286,7 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
       </section>
 
       <section style={styles.card}>
-        <h2 style={styles.sectionTitle}>Venta de medicamentos</h2>
+        <h2 style={styles.sectionTitle}>Venta de medicamentos de farmacia</h2>
 
         {loading && <p>Cargando datos de farmacia...</p>}
 
@@ -453,16 +453,16 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
       </section>
 
       <section style={styles.card}>
-        <h2 style={styles.sectionTitle}>Ventas de farmacia</h2>
+        <h2 style={styles.sectionTitle}>Ventas y facturas de farmacia</h2>
 
-        {!loading && invoices.length === 0 && <p>No hay ventas registradas.</p>}
+        {!loading && invoices.length === 0 && <p>No hay ventas de farmacia registradas.</p>}
 
         {!loading && invoices.length > 0 && (
           <table style={styles.table}>
             <thead>
               <tr>
                 <th style={styles.th}>Paciente</th>
-                <th style={styles.th}>Total</th>
+                <th style={styles.th}>Total farmacia</th>
                 <th style={styles.th}>Medicamentos</th>
                 <th style={styles.th}>Fecha</th>
                 <th style={styles.th}>Acciones</th>
