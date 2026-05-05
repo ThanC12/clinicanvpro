@@ -1,0 +1,17 @@
+{
+  "name": "ClinicaProNV",
+  "short_name": "ClinicaProNV",
+  "description": "Gestión clínica, citas, recetas, farmacia y facturación.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef4f8",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

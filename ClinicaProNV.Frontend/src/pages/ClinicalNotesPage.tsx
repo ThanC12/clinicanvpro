@@ -27,6 +27,39 @@ type ClinicalNote = {
   doctorName: string | null;
 };
 
+type Medicine = {
+  id: string;
+  name: string;
+  unitPrice: number;
+  stock: number;
+  requiresPrescription: boolean;
+};
+
+type PrescriptionDetailInput = {
+  medicineId: string;
+  quantity: string;
+  dosage: string;
+  instructions: string;
+};
+
+type Prescription = {
+  id: string;
+  appointmentId: string;
+  notes: string;
+  createdAtUtc: string;
+  appointmentDate: string;
+  patientName: string | null;
+  doctorName: string | null;
+  details: Array<{
+    id: string;
+    medicineId: string;
+    medicineName: string | null;
+    quantity: number;
+    dosage: string;
+    instructions: string;
+  }>;
+};
+
 type ClinicalNotesPageProps = {
   onBack: () => void;
 };
@@ -34,10 +67,24 @@ type ClinicalNotesPageProps = {
 export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clinicalNotes, setClinicalNotes] = useState<ClinicalNote[]>([]);
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
 
   const [appointmentId, setAppointmentId] = useState("");
   const [notes, setNotes] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [patientFilter, setPatientFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [prescriptionAppointmentId, setPrescriptionAppointmentId] = useState("");
+  const [prescriptionNotes, setPrescriptionNotes] = useState("");
+  const [prescriptionDetails, setPrescriptionDetails] = useState<PrescriptionDetailInput[]>([
+    {
+      medicineId: "",
+      quantity: "1",
+      dosage: "",
+      instructions: "",
+    },
+  ]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,6 +99,10 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
       setAppointments(appointmentsData);
       const notesData = await apiRequest<ClinicalNote[]>("/clinical-notes");
       setClinicalNotes(notesData);
+      const medicinesData = await apiRequest<Medicine[]>("/medicines");
+      setMedicines(medicinesData);
+      const prescriptionsData = await apiRequest<Prescription[]>("/prescriptions");
+      setPrescriptions(prescriptionsData);
 
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al cargar datos");
@@ -142,6 +193,141 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
     setNotes("");
   }
 
+  function updatePrescriptionDetail(
+    index: number,
+    field: keyof PrescriptionDetailInput,
+    value: string
+  ) {
+    setPrescriptionDetails((current) =>
+      current.map((detail, i) => (i === index ? { ...detail, [field]: value } : detail))
+    );
+  }
+
+  function addPrescriptionDetail() {
+    setPrescriptionDetails((current) => [
+      ...current,
+      {
+        medicineId: "",
+        quantity: "1",
+        dosage: "",
+        instructions: "",
+      },
+    ]);
+  }
+
+  function removePrescriptionDetail(index: number) {
+    setPrescriptionDetails((current) =>
+      current.length === 1 ? current : current.filter((_, i) => i !== index)
+    );
+  }
+
+  function clearPrescriptionForm() {
+    setPrescriptionAppointmentId("");
+    setPrescriptionNotes("");
+    setPrescriptionDetails([
+      {
+        medicineId: "",
+        quantity: "1",
+        dosage: "",
+        instructions: "",
+      },
+    ]);
+  }
+
+  async function handleSubmitPrescription(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!prescriptionAppointmentId) {
+      setMessage("Seleccione una cita para la receta.");
+      return;
+    }
+
+    const cleanDetails = prescriptionDetails.map((detail) => ({
+      medicineId: detail.medicineId,
+      quantity: Number(detail.quantity),
+      dosage: detail.dosage,
+      instructions: detail.instructions,
+    }));
+
+    if (cleanDetails.some((detail) => !detail.medicineId)) {
+      setMessage("Todos los medicamentos de la receta son obligatorios.");
+      return;
+    }
+
+    if (cleanDetails.some((detail) => detail.quantity <= 0)) {
+      setMessage("La cantidad debe ser mayor a cero.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setMessage("Guardando receta...");
+
+      await apiRequest<void>("/prescriptions", {
+        method: "POST",
+        body: JSON.stringify({
+          appointmentId: prescriptionAppointmentId,
+          notes: prescriptionNotes,
+          details: cleanDetails,
+        }),
+      });
+
+      setMessage("Receta guardada correctamente.");
+      clearPrescriptionForm();
+      await loadData();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al guardar receta");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handlePrintPrescription(prescription: Prescription) {
+    const details = prescription.details
+      .map(
+        (detail) =>
+          `${detail.medicineName ?? detail.medicineId} - Cantidad: ${detail.quantity} - Dosis: ${detail.dosage} - Indicaciones: ${detail.instructions}`
+      )
+      .join("\n");
+
+    const printable = window.open("", "_blank", "width=820,height=900");
+
+    if (!printable) {
+      setMessage("No se pudo abrir la ventana de impresión.");
+      return;
+    }
+
+    printable.document.write(`
+      <html>
+        <head>
+          <title>Receta ClinicaProNV</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 32px; color: #111827; }
+            h1 { margin: 0 0 8px; }
+            .meta { display: grid; gap: 6px; margin: 20px 0; }
+            pre { white-space: pre-wrap; font-family: Arial, sans-serif; line-height: 1.5; }
+            .notes { margin-top: 20px; padding-top: 14px; border-top: 1px solid #d1d5db; }
+          </style>
+        </head>
+        <body>
+          <h1>ClinicaProNV</h1>
+          <h2>Receta médica</h2>
+          <div class="meta">
+            <span><strong>Paciente:</strong> ${prescription.patientName ?? "Paciente"}</span>
+            <span><strong>Doctor:</strong> ${prescription.doctorName ?? "Doctor"}</span>
+            <span><strong>Fecha cita:</strong> ${new Date(prescription.appointmentDate).toLocaleString()}</span>
+            <span><strong>Fecha receta:</strong> ${new Date(prescription.createdAtUtc).toLocaleString()}</span>
+          </div>
+          <h3>Medicamentos</h3>
+          <pre>${details}</pre>
+          <div class="notes"><strong>Observaciones:</strong> ${prescription.notes}</div>
+          <script>window.print();</script>
+        </body>
+      </html>
+    `);
+    printable.document.close();
+  }
+
   function getStatusLabel(status: number) {
     if (status === 1) return "Programada";
     if (status === 2) return "Completada";
@@ -152,6 +338,34 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
   useEffect(() => {
     loadData();
   }, []);
+
+  const availableAppointments = appointments.filter((appointment) =>
+    editingNoteId ? appointment.id === appointmentId : appointment.status === 1 || appointment.status === 2
+  );
+
+  const patientsFromNotes = Array.from(
+    new Map(
+      clinicalNotes.map((note) => [
+        note.patientId,
+        note.patientName ?? note.patientId,
+      ])
+    ).entries()
+  );
+
+  const filteredNotes = clinicalNotes.filter((note) => {
+    const text = search.toLowerCase().trim();
+
+    if (patientFilter !== "all" && note.patientId !== patientFilter) {
+      return false;
+    }
+
+    return (
+      !text ||
+      note.notes.toLowerCase().includes(text) ||
+      (note.patientName ?? "").toLowerCase().includes(text) ||
+      (note.doctorName ?? "").toLowerCase().includes(text)
+    );
+  });
 
   return (
     <main style={styles.page}>
@@ -185,7 +399,7 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
               >
                 <option value="">Seleccione una cita</option>
 
-                {appointments.map((appointment) => (
+                {availableAppointments.map((appointment) => (
                   <option key={appointment.id} value={appointment.id}>
                     {appointment.patientName ?? "Paciente"} -{" "}
                     {appointment.doctorName ?? "Doctor"} -{" "}
@@ -228,13 +442,201 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
       </section>
 
       <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>Receta médica</h2>
+
+        {!loading && (
+          <form onSubmit={handleSubmitPrescription} style={styles.form}>
+            <label style={styles.label}>
+              Cita médica
+              <select
+                style={styles.input}
+                value={prescriptionAppointmentId}
+                onChange={(e) => setPrescriptionAppointmentId(e.target.value)}
+              >
+                <option value="">Seleccione una cita</option>
+                {availableAppointments.map((appointment) => (
+                  <option key={appointment.id} value={appointment.id}>
+                    {appointment.patientName ?? "Paciente"} -{" "}
+                    {appointment.doctorName ?? "Doctor"} -{" "}
+                    {new Date(appointment.date).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div style={styles.detailsHeader}>
+              <h3 style={styles.subTitle}>Medicamentos</h3>
+              <button
+                style={styles.addButton}
+                type="button"
+                onClick={addPrescriptionDetail}
+              >
+                Agregar medicamento
+              </button>
+            </div>
+
+            {prescriptionDetails.map((detail, index) => (
+              <div key={index} style={styles.prescriptionRow}>
+                <label style={styles.label}>
+                  Medicamento
+                  <select
+                    style={styles.input}
+                    value={detail.medicineId}
+                    onChange={(e) =>
+                      updatePrescriptionDetail(index, "medicineId", e.target.value)
+                    }
+                  >
+                    <option value="">Seleccione medicamento</option>
+                    {medicines.map((medicine) => (
+                      <option key={medicine.id} value={medicine.id}>
+                        {medicine.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={styles.label}>
+                  Cantidad
+                  <input
+                    style={styles.input}
+                    type="number"
+                    min="1"
+                    value={detail.quantity}
+                    onChange={(e) =>
+                      updatePrescriptionDetail(index, "quantity", e.target.value)
+                    }
+                  />
+                </label>
+
+                <label style={styles.label}>
+                  Dosis
+                  <input
+                    style={styles.input}
+                    value={detail.dosage}
+                    onChange={(e) =>
+                      updatePrescriptionDetail(index, "dosage", e.target.value)
+                    }
+                    placeholder="Ej: 1 tableta cada 8 horas"
+                  />
+                </label>
+
+                <label style={styles.label}>
+                  Indicaciones
+                  <input
+                    style={styles.input}
+                    value={detail.instructions}
+                    onChange={(e) =>
+                      updatePrescriptionDetail(index, "instructions", e.target.value)
+                    }
+                    placeholder="Ej: Después de alimentos"
+                  />
+                </label>
+
+                <button
+                  style={styles.deleteButton}
+                  type="button"
+                  onClick={() => removePrescriptionDetail(index)}
+                  disabled={prescriptionDetails.length === 1}
+                >
+                  Quitar
+                </button>
+              </div>
+            ))}
+
+            <label style={styles.label}>
+              Observaciones
+              <textarea
+                style={styles.textarea}
+                value={prescriptionNotes}
+                onChange={(e) => setPrescriptionNotes(e.target.value)}
+                placeholder="Indicaciones generales para el paciente"
+              />
+            </label>
+
+            <button style={styles.saveButton} type="submit" disabled={saving}>
+              {saving ? "Guardando..." : "Guardar receta"}
+            </button>
+          </form>
+        )}
+      </section>
+
+      <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>Recetas emitidas</h2>
+
+        {!loading && prescriptions.length === 0 && <p>No hay recetas registradas.</p>}
+
+        {!loading && prescriptions.length > 0 && (
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Paciente</th>
+                <th style={styles.th}>Doctor</th>
+                <th style={styles.th}>Fecha</th>
+                <th style={styles.th}>Medicamentos</th>
+                <th style={styles.th}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {prescriptions.map((prescription) => (
+                <tr key={prescription.id}>
+                  <td style={styles.td}>{prescription.patientName ?? "Paciente"}</td>
+                  <td style={styles.td}>{prescription.doctorName ?? "Doctor"}</td>
+                  <td style={styles.td}>
+                    {new Date(prescription.createdAtUtc).toLocaleString()}
+                  </td>
+                  <td style={styles.td}>{prescription.details.length}</td>
+                  <td style={styles.td}>
+                    <button
+                      style={styles.editButton}
+                      type="button"
+                      onClick={() => handlePrintPrescription(prescription)}
+                    >
+                      Imprimir
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Listado de historias clínicas</h2>
 
-        {clinicalNotes.length === 0 && !loading && (
+        <div style={styles.filters}>
+          <label style={styles.label}>
+            Paciente
+            <select
+              style={styles.input}
+              value={patientFilter}
+              onChange={(e) => setPatientFilter(e.target.value)}
+            >
+              <option value="all">Todos</option>
+              {patientsFromNotes.map(([patientId, patientName]) => (
+                <option key={patientId} value={patientId}>
+                  {patientName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label style={styles.label}>
+            Buscar en historial
+            <input
+              style={styles.input}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Paciente, doctor o texto de nota"
+            />
+          </label>
+        </div>
+
+        {filteredNotes.length === 0 && !loading && (
           <p>No hay notas clínicas registradas.</p>
         )}
 
-        {clinicalNotes.length > 0 && (
+        {filteredNotes.length > 0 && (
           <table style={styles.table}>
             <thead>
               <tr>
@@ -248,7 +650,7 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
             </thead>
 
             <tbody>
-              {clinicalNotes.map((note) => (
+              {filteredNotes.map((note) => (
                 <tr key={note.id}>
                   <td style={styles.td}>{note.patientName ?? note.patientId}</td>
                   <td style={styles.td}>{note.doctorName ?? note.doctorId}</td>
@@ -331,9 +733,24 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 0,
     color: "#111827",
   },
+  subTitle: {
+    margin: 0,
+    color: "#111827",
+  },
   form: {
     display: "grid",
     gap: "16px",
+  },
+  detailsHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  prescriptionRow: {
+    display: "grid",
+    gridTemplateColumns: "1.4fr 0.55fr 1fr 1fr auto",
+    gap: "12px",
+    alignItems: "end",
   },
   label: {
     display: "grid",
@@ -347,8 +764,8 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #d1d5db",
     borderRadius: "10px",
     fontSize: "15px",
-    background: "#3b3b3b",
-    color: "white",
+    background: "white",
+    color: "#111827",
   },
   textarea: {
     minHeight: "130px",
@@ -356,19 +773,34 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #d1d5db",
     borderRadius: "10px",
     fontSize: "15px",
-    background: "#3b3b3b",
-    color: "white",
+    background: "white",
+    color: "#111827",
     resize: "vertical",
   },
   actions: {
     display: "flex",
     gap: "12px",
   },
+  filters: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "12px",
+    marginBottom: "18px",
+  },
   saveButton: {
     padding: "13px 18px",
     border: "none",
     borderRadius: "10px",
-    background: "#2563eb",
+    background: "#0f766e",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+  addButton: {
+    padding: "10px 14px",
+    border: "none",
+    borderRadius: "10px",
+    background: "#334155",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
@@ -384,7 +816,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   message: {
     marginTop: "16px",
-    color: "#2563eb",
+    color: "#0f766e",
     fontWeight: "bold",
     textAlign: "center",
   },
@@ -413,7 +845,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#f59e0b",
+    background: "#334155",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
@@ -422,7 +854,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#ef4444",
+    background: "#b91c1c",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",

@@ -1,73 +1,60 @@
-# React + TypeScript + Vite
+# ClinicaProNV Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend React + Vite para el sistema ClinicaProNV.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## API
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Por defecto el cliente usa `/api` y el servidor de Vite redirige al backend en `http://localhost:5000`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Para apuntar a otra API, define:
+
+```bash
+VITE_API_URL=http://localhost:5000/api
 ```
+
+## Módulos
+
+- Autenticación y registro.
+- Dashboard con módulos por rol.
+- Pacientes, doctores, citas e historias clínicas.
+- Facturación clínica con detalle e impresión.
+- Farmacia con inventario y venta de medicamentos.
+- Administración de usuarios, roles y estado de acceso.
+
+## WhatsApp automático
+
+El backend está preparado para WhatsApp Business Cloud API. Se configura en `ClinicaProNV.Api/appsettings.json`:
+
+```json
+"WhatsApp": {
+  "Enabled": true,
+  "GraphApiVersion": "v20.0",
+  "PhoneNumberId": "ID_DEL_NUMERO_DE_META",
+  "AccessToken": "TOKEN_DE_META",
+  "LanguageCode": "es",
+  "Templates": {
+    "AppointmentCreated": "cita_creada",
+    "ClinicInvoiceCreated": "factura_clinica",
+    "PharmacyInvoiceCreated": "factura_farmacia"
+  }
+}
+```
+
+Plantillas esperadas:
+
+- `cita_creada`: paciente, doctor, fecha, motivo.
+- `factura_clinica`: paciente, factura, fecha, total.
+- `factura_farmacia`: paciente, factura, fecha, total.
+
+También existe un endpoint de prueba para Admin:
+
+`POST /api/notifications/whatsapp/test`

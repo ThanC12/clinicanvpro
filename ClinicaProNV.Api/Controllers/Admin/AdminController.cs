@@ -1,4 +1,5 @@
 using ClinicaProNV.Domain.Entities;
+using ClinicaProNV.Application.Security;
 using ClinicaProNV.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +30,11 @@ public class AdminController : ControllerBase
                 u.Id,
                 u.Email,
                 u.IsActive,
-                u.CreatedAtUtc
+                u.CreatedAtUtc,
+                Roles = u.UserRoles
+                    .Select(ur => ur.Role.Name)
+                    .OrderBy(name => name)
+                    .ToList()
             })
             .ToListAsync();
 
@@ -92,4 +97,124 @@ public class AdminController : ControllerBase
 
         return Ok("Rol asignado.");
     }
+
+    // POST /api/admin/users
+    [HttpPost("users")]
+    public async Task<IActionResult> CreateUser(
+        [FromBody] CreateUserRequest request,
+        [FromServices] IPasswordHasher hasher)
+    {
+        if (request is null)
+        {
+            return BadRequest("El cuerpo de la solicitud es obligatorio.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest("El correo es obligatorio.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest("La contraseña es obligatoria.");
+        }
+
+        if (request.Password.Length < 6)
+        {
+            return BadRequest("La contraseña debe tener al menos 6 caracteres.");
+        }
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        var roleName = string.IsNullOrWhiteSpace(request.Role) ? "Recepcion" : request.Role.Trim();
+
+        var exists = await _db.Users.AnyAsync(u => u.Email == email);
+        if (exists)
+        {
+            return Conflict("Ya existe un usuario con ese correo.");
+        }
+
+        var role = await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        if (role is null)
+        {
+            return NotFound("Rol no existe.");
+        }
+
+        var user = new User(email, hasher.Hash(request.Password));
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
+
+        _db.UserRoles.Add(new UserRole(user.Id, role.Id));
+        await _db.SaveChangesAsync();
+
+        return Created($"/api/admin/users/{user.Id}", new
+        {
+            user.Id,
+            user.Email,
+            user.IsActive,
+            user.CreatedAtUtc,
+            Roles = new[] { role.Name }
+        });
+    }
+
+    // DELETE /api/admin/users/{userId}/roles/{roleName}
+    [HttpDelete("users/{userId:guid}/roles/{roleName}")]
+    public async Task<IActionResult> RemoveRole(Guid userId, string roleName)
+    {
+        roleName = roleName.Trim();
+
+        var role = await _db.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        if (role is null)
+        {
+            return NotFound("Rol no existe.");
+        }
+
+        var userRole = await _db.UserRoles
+            .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.Id);
+
+        if (userRole is null)
+        {
+            return NotFound("El usuario no tiene ese rol.");
+        }
+
+        _db.UserRoles.Remove(userRole);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // POST /api/admin/users/{userId}/activate
+    [HttpPost("users/{userId:guid}/activate")]
+    public async Task<IActionResult> ActivateUser(Guid userId)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user is null)
+        {
+            return NotFound("Usuario no existe.");
+        }
+
+        user.Activate();
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // POST /api/admin/users/{userId}/deactivate
+    [HttpPost("users/{userId:guid}/deactivate")]
+    public async Task<IActionResult> DeactivateUser(Guid userId)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user is null)
+        {
+            return NotFound("Usuario no existe.");
+        }
+
+        user.Deactivate();
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    public sealed record CreateUserRequest(string Email, string Password, string Role);
 }

@@ -5,6 +5,8 @@ type Patient = {
     id: string;
     fullName: string;
     identification: string;
+    email?: string;
+    whatsAppNumber?: string;
     createdAtUtc: string;
 };
 
@@ -19,6 +21,8 @@ type Appointment = {
     id: string;
     patientId: string;
     patientName: string | null;
+    patientEmail: string | null;
+    patientWhatsApp: string | null;
     doctorId: string;
     doctorName: string | null;
     doctorSpecialty: string | null;
@@ -51,6 +55,10 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
     const [doctorId, setDoctorId] = useState("");
     const [appointmentDate, setAppointmentDate] = useState("");
     const [reason, setReason] = useState("");
+    const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [doctorFilter, setDoctorFilter] = useState("all");
+    const [dateFilter, setDateFilter] = useState("");
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -97,8 +105,11 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
             setSaving(true);
             setMessage("Guardando cita...");
 
-            const result = await apiRequest<AppointmentResponse>("/appointments", {
-                method: "POST",
+            const endpoint = editingAppointmentId
+                ? `/appointments/${editingAppointmentId}`
+                : "/appointments";
+            const result = await apiRequest<AppointmentResponse>(endpoint, {
+                method: editingAppointmentId ? "PUT" : "POST",
                 body: JSON.stringify({
                     patientId,
                     doctorId,
@@ -107,12 +118,13 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
                 }),
             });
 
-            setPatientId("");
-            setDoctorId("");
-            setAppointmentDate("");
-            setReason("");
+            clearForm();
 
-            setMessage(`Cita creada correctamente. ID: ${result.id}`);
+            setMessage(
+                editingAppointmentId
+                    ? "Cita actualizada correctamente."
+                    : `Cita creada correctamente. ID: ${result.id}`
+            );
 
             await loadData();
         } catch (error) {
@@ -144,6 +156,55 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
             setMessage(error instanceof Error ? error.message : "Error al cancelar cita");
         }
     }
+    async function handleCompleteAppointment(id: string) {
+        const confirmed = window.confirm("¿Marcar esta cita como completada?");
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            setMessage("Completando cita...");
+
+            await apiRequest<void>(`/appointments/${id}/complete`, {
+                method: "POST",
+            });
+
+            setMessage("Cita completada correctamente.");
+            await loadData();
+        } catch (error) {
+            setMessage(error instanceof Error ? error.message : "Error al completar cita");
+        }
+    }
+
+    function handleEditAppointment(appointment: Appointment) {
+        if (appointment.status !== 1) {
+            setMessage("Solo se pueden editar citas programadas.");
+            return;
+        }
+
+        setEditingAppointmentId(appointment.id);
+        setPatientId(appointment.patientId);
+        setDoctorId(appointment.doctorId);
+        setAppointmentDate(toDateTimeLocalValue(appointment.date));
+        setReason(appointment.reason);
+        setMessage("Editando cita programada.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function clearForm() {
+        setEditingAppointmentId(null);
+        setPatientId("");
+        setDoctorId("");
+        setAppointmentDate("");
+        setReason("");
+    }
+
+    function toDateTimeLocalValue(value: string) {
+        const date = new Date(value);
+        const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return offsetDate.toISOString().slice(0, 16);
+    }
     async function handleDeleteAppointment(id: string) {
         const confirmed = window.confirm("¿Seguro que deseas eliminar esta cita?");
 
@@ -173,9 +234,69 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
         return "Desconocido";
     }
 
+    function buildAppointmentMessage(appointment: Appointment) {
+        return `Cita médica ClinicaProNV\nPaciente: ${appointment.patientName ?? appointment.patientId}\nDoctor: ${appointment.doctorName ?? appointment.doctorId}${appointment.doctorSpecialty ? ` - ${appointment.doctorSpecialty}` : ""}\nFecha: ${new Date(appointment.date).toLocaleString()}\nMotivo: ${appointment.reason}\nEstado: ${getStatusLabel(appointment.status)}\n\nPor favor llegue 15 minutos antes.`;
+    }
+
+    function handleEmailAppointment(appointment: Appointment) {
+        if (!appointment.patientEmail) {
+            setMessage("El paciente no tiene correo registrado.");
+            return;
+        }
+
+        const subject = encodeURIComponent("Confirmación de cita médica");
+        const body = encodeURIComponent(buildAppointmentMessage(appointment));
+        window.location.href = `mailto:${appointment.patientEmail}?subject=${subject}&body=${body}`;
+    }
+
+    function handleWhatsAppAppointment(appointment: Appointment) {
+        if (!appointment.patientWhatsApp) {
+            setMessage("El paciente no tiene WhatsApp registrado.");
+            return;
+        }
+
+        const phone = appointment.patientWhatsApp.replace(/\D/g, "");
+        const text = encodeURIComponent(buildAppointmentMessage(appointment));
+        window.open(`https://wa.me/${phone}?text=${text}`, "_blank", "noopener,noreferrer");
+    }
+
+    async function handleShareAppointment(appointment: Appointment) {
+        const text = buildAppointmentMessage(appointment);
+
+        if (navigator.share) {
+            await navigator.share({
+                title: "Cita médica ClinicaProNV",
+                text,
+            });
+            return;
+        }
+
+        await navigator.clipboard.writeText(text);
+        setMessage("Mensaje de cita copiado para compartir en redes sociales.");
+    }
+
     useEffect(() => {
         loadData();
     }, []);
+
+    const filteredAppointments = appointments.filter((appointment) => {
+        if (statusFilter !== "all" && String(appointment.status) !== statusFilter) {
+            return false;
+        }
+
+        if (doctorFilter !== "all" && appointment.doctorId !== doctorFilter) {
+            return false;
+        }
+
+        if (dateFilter) {
+            const appointmentDay = new Date(appointment.date).toISOString().slice(0, 10);
+            if (appointmentDay !== dateFilter) {
+                return false;
+            }
+        }
+
+        return true;
+    });
 
     return (
         <main style={styles.page}>
@@ -191,7 +312,9 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
             </section>
 
             <section style={styles.card}>
-                <h2 style={styles.sectionTitle}>Registrar cita</h2>
+                <h2 style={styles.sectionTitle}>
+                    {editingAppointmentId ? "Editar cita" : "Registrar cita"}
+                </h2>
 
                 {loading && <p>Cargando pacientes, doctores y citas...</p>}
 
@@ -250,8 +373,22 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
                         </label>
 
                         <button style={styles.saveButton} type="submit" disabled={saving}>
-                            {saving ? "Guardando..." : "Guardar cita"}
+                            {saving
+                                ? "Guardando..."
+                                : editingAppointmentId
+                                ? "Guardar cambios"
+                                : "Guardar cita"}
                         </button>
+
+                        {editingAppointmentId && (
+                            <button
+                                style={styles.secondaryActionButton}
+                                type="button"
+                                onClick={clearForm}
+                            >
+                                Cancelar edición
+                            </button>
+                        )}
                     </form>
                 )}
 
@@ -261,11 +398,53 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
             <section style={styles.card}>
                 <h2 style={styles.sectionTitle}>Listado de citas</h2>
 
-                {appointments.length === 0 && !loading && (
+                <div style={styles.filters}>
+                    <label style={styles.label}>
+                        Estado
+                        <select
+                            style={styles.input}
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="all">Todos</option>
+                            <option value="1">Programadas</option>
+                            <option value="2">Completadas</option>
+                            <option value="3">Canceladas</option>
+                        </select>
+                    </label>
+
+                    <label style={styles.label}>
+                        Doctor
+                        <select
+                            style={styles.input}
+                            value={doctorFilter}
+                            onChange={(e) => setDoctorFilter(e.target.value)}
+                        >
+                            <option value="all">Todos</option>
+                            {doctors.map((doctor) => (
+                                <option key={doctor.id} value={doctor.id}>
+                                    {doctor.fullName}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+
+                    <label style={styles.label}>
+                        Fecha
+                        <input
+                            style={styles.input}
+                            type="date"
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                        />
+                    </label>
+                </div>
+
+                {filteredAppointments.length === 0 && !loading && (
                     <p>No hay citas registradas.</p>
                 )}
 
-                {appointments.length > 0 && (
+                {filteredAppointments.length > 0 && (
                     <table style={styles.table}>
                         <thead>
                             <tr>
@@ -279,7 +458,7 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
                         </thead>
 
                         <tbody>
-                            {appointments.map((appointment) => (
+                            {filteredAppointments.map((appointment) => (
                                 <tr key={appointment.id}>
                                     <td style={styles.td}>
                                         {appointment.patientName ?? appointment.patientId}
@@ -316,13 +495,50 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
                                     <td style={styles.td}>
                                         <div style={styles.actions}>
                                             {appointment.status === 1 && (
+                                                <>
+                                                <button
+                                                    style={styles.editButton}
+                                                    onClick={() => handleEditAppointment(appointment)}
+                                                >
+                                                    Editar
+                                                </button>
+
+                                                <button
+                                                    style={styles.completeAppointmentButton}
+                                                    onClick={() => handleCompleteAppointment(appointment.id)}
+                                                >
+                                                    Completar
+                                                </button>
+
                                                 <button
                                                     style={styles.cancelAppointmentButton}
                                                     onClick={() => handleCancelAppointment(appointment.id)}
                                                 >
                                                     Cancelar
                                                 </button>
+                                                </>
                                             )}
+
+                                            <button
+                                                style={styles.emailButton}
+                                                onClick={() => handleEmailAppointment(appointment)}
+                                            >
+                                                Correo
+                                            </button>
+
+                                            <button
+                                                style={styles.whatsAppButton}
+                                                onClick={() => handleWhatsAppAppointment(appointment)}
+                                            >
+                                                WhatsApp
+                                            </button>
+
+                                            <button
+                                                style={styles.shareButton}
+                                                onClick={() => handleShareAppointment(appointment)}
+                                            >
+                                                Compartir
+                                            </button>
 
                                             <button
                                                 style={styles.deleteAppointmentButton}
@@ -407,22 +623,38 @@ const styles: Record<string, React.CSSProperties> = {
         border: "1px solid #d1d5db",
         borderRadius: "10px",
         fontSize: "15px",
-        background: "#3b3b3b",
-        color: "white",
+        background: "white",
+        color: "#111827",
     },
     saveButton: {
         gridColumn: "1 / -1",
         padding: "13px 18px",
         border: "none",
         borderRadius: "10px",
-        background: "#2563eb",
+        background: "#0f766e",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
     },
+    secondaryActionButton: {
+        gridColumn: "1 / -1",
+        padding: "13px 18px",
+        border: "none",
+        borderRadius: "10px",
+        background: "#6b7280",
+        color: "white",
+        fontWeight: "bold",
+        cursor: "pointer",
+    },
+    filters: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr 1fr",
+        gap: "12px",
+        marginBottom: "18px",
+    },
     message: {
         marginTop: "16px",
-        color: "#2563eb",
+        color: "#0f766e",
         fontWeight: "bold",
         textAlign: "center",
     },
@@ -455,8 +687,8 @@ const styles: Record<string, React.CSSProperties> = {
         fontWeight: "bold",
     },
     scheduledBadge: {
-        background: "#dbeafe",
-        color: "#1d4ed8",
+        background: "#ecfdf5",
+        color: "#065f46",
     },
     cancelledBadge: {
         background: "#fee2e2",
@@ -466,7 +698,52 @@ const styles: Record<string, React.CSSProperties> = {
         padding: "8px 12px",
         border: "none",
         borderRadius: "8px",
-        background: "#ef4444",
+        background: "#b91c1c",
+        color: "white",
+        fontWeight: "bold",
+        cursor: "pointer",
+    },
+    completeAppointmentButton: {
+        padding: "8px 12px",
+        border: "none",
+        borderRadius: "8px",
+        background: "#0f766e",
+        color: "white",
+        fontWeight: "bold",
+        cursor: "pointer",
+    },
+    editButton: {
+        padding: "8px 12px",
+        border: "none",
+        borderRadius: "8px",
+        background: "#334155",
+        color: "white",
+        fontWeight: "bold",
+        cursor: "pointer",
+    },
+    emailButton: {
+        padding: "8px 12px",
+        border: "none",
+        borderRadius: "8px",
+        background: "#0f766e",
+        color: "white",
+        fontWeight: "bold",
+        cursor: "pointer",
+    },
+    whatsAppButton: {
+        padding: "8px 12px",
+        border: "none",
+        borderRadius: "8px",
+        background: "#0f766e",
+        color: "white",
+        fontWeight: "bold",
+        cursor: "pointer",
+    },
+    shareButton: {
+        padding: "8px 12px",
+        border: "none",
+        borderRadius: "8px",
+        background: "#334155",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
@@ -481,7 +758,7 @@ const styles: Record<string, React.CSSProperties> = {
         padding: "8px 12px",
         border: "none",
         borderRadius: "8px",
-        background: "#7f0c0c",
+        background: "#b91c1c",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",

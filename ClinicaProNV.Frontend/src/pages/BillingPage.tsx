@@ -18,18 +18,61 @@ type ClinicInvoice = {
   id: string;
   patientId: string;
   patientName: string | null;
+  patientEmail?: string | null;
+  patientWhatsApp?: string | null;
   total: number;
   createdAtUtc: string;
   detailsCount: number;
+};
+
+type ClinicInvoiceDetail = {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+};
+
+type ClinicInvoiceFull = ClinicInvoice & {
+  details: ClinicInvoiceDetail[];
 };
 
 type BillingPageProps = {
   onBack: () => void;
 };
 
+const serviceCatalog = [
+  { description: "Consulta médica general", unitPrice: 30 },
+  { description: "Consulta médica especialista", unitPrice: 45 },
+  { description: "Control postoperatorio", unitPrice: 25 },
+  { description: "Curación menor", unitPrice: 18 },
+  { description: "Sutura simple", unitPrice: 35 },
+  { description: "Retiro de puntos", unitPrice: 15 },
+  { description: "Nebulización", unitPrice: 12 },
+  { description: "Inyección / medicación intramuscular", unitPrice: 8 },
+  { description: "Hidratación intravenosa básica", unitPrice: 35 },
+  { description: "Electrocardiograma", unitPrice: 25 },
+  { description: "Ecografía general", unitPrice: 30 },
+  { description: "Radiografía simple", unitPrice: 25 },
+  { description: "Laboratorio básico", unitPrice: 20 },
+  { description: "Paquete chequeo general", unitPrice: 40 },
+  { description: "Uso sala observación 6 horas", unitPrice: 60 },
+  { description: "Hospitalización día clínica", unitPrice: 220 },
+  { description: "Derecho de quirófano menor", unitPrice: 180 },
+  { description: "Derecho de quirófano general básico", unitPrice: 350 },
+  { description: "Cirugía menor ambulatoria", unitPrice: 280 },
+  { description: "Apendicectomía paquete base", unitPrice: 950 },
+  { description: "Colecistectomía paquete base", unitPrice: 1200 },
+  { description: "Cesárea paquete base", unitPrice: 1100 },
+  { description: "Parto normal paquete base", unitPrice: 750 },
+  { description: "Limpieza quirúrgica / drenaje absceso", unitPrice: 180 },
+];
+
 export function BillingPage({ onBack }: BillingPageProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [invoices, setInvoices] = useState<ClinicInvoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<ClinicInvoiceFull | null>(null);
+  const [search, setSearch] = useState("");
 
   const [patientId, setPatientId] = useState("");
   const [details, setDetails] = useState<InvoiceDetailInput[]>([
@@ -191,9 +234,78 @@ export function BillingPage({ onBack }: BillingPageProps) {
     }
   }
 
+  function addCatalogService(description: string, unitPrice: number) {
+    setDetails((current) => [
+      ...current,
+      {
+        description,
+        quantity: "1",
+        unitPrice: String(unitPrice),
+      },
+    ]);
+  }
+
+  async function handleViewInvoice(id: string) {
+    try {
+      setMessage("Cargando detalle de factura...");
+      const invoice = await apiRequest<ClinicInvoiceFull>(`/clinic-invoices/${id}`);
+      setSelectedInvoice(invoice);
+      setMessage("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al cargar factura");
+    }
+  }
+
+  function handlePrintInvoice() {
+    window.print();
+  }
+
+  function buildInvoiceMessage(invoice: ClinicInvoiceFull) {
+    const detailLines = invoice.details
+      .map(
+        (detail) =>
+          `- ${detail.description}: ${detail.quantity} x $${detail.unitPrice.toFixed(2)} = $${detail.lineTotal.toFixed(2)}`
+      )
+      .join("\n");
+
+    return `Factura ClinicaProNV\nPaciente: ${invoice.patientName ?? invoice.patientId}\nFecha: ${new Date(invoice.createdAtUtc).toLocaleString()}\n\n${detailLines}\n\nTotal: $${invoice.total.toFixed(2)}`;
+  }
+
+  function handleEmailInvoice(invoice: ClinicInvoiceFull) {
+    if (!invoice.patientEmail) {
+      setMessage("El paciente no tiene correo registrado.");
+      return;
+    }
+
+    const subject = encodeURIComponent("Factura ClinicaProNV");
+    const body = encodeURIComponent(buildInvoiceMessage(invoice));
+    window.location.href = `mailto:${invoice.patientEmail}?subject=${subject}&body=${body}`;
+  }
+
+  function handleWhatsAppInvoice(invoice: ClinicInvoiceFull) {
+    if (!invoice.patientWhatsApp) {
+      setMessage("El paciente no tiene WhatsApp registrado.");
+      return;
+    }
+
+    const phone = invoice.patientWhatsApp.replace(/\D/g, "");
+    const text = encodeURIComponent(buildInvoiceMessage(invoice));
+    window.open(`https://wa.me/${phone}?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+
   useEffect(() => {
     loadData();
   }, []);
+
+  const filteredInvoices = invoices.filter((invoice) => {
+    const text = search.toLowerCase().trim();
+
+    return (
+      !text ||
+      (invoice.patientName ?? invoice.patientId).toLowerCase().includes(text) ||
+      invoice.id.toLowerCase().includes(text)
+    );
+  });
 
   return (
     <main style={styles.page}>
@@ -237,6 +349,20 @@ export function BillingPage({ onBack }: BillingPageProps) {
               <button style={styles.addButton} type="button" onClick={addDetail}>
                 Agregar detalle
               </button>
+            </div>
+
+            <div style={styles.catalogBox}>
+              {serviceCatalog.map((service) => (
+                <button
+                  key={service.description}
+                  style={styles.catalogButton}
+                  type="button"
+                  onClick={() => addCatalogService(service.description, service.unitPrice)}
+                >
+                  <span>{service.description}</span>
+                  <strong>${service.unitPrice.toFixed(2)}</strong>
+                </button>
+              ))}
             </div>
 
             {details.map((detail, index) => {
@@ -317,9 +443,16 @@ export function BillingPage({ onBack }: BillingPageProps) {
       <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Listado de facturas</h2>
 
-        {!loading && invoices.length === 0 && <p>No hay facturas registradas.</p>}
+        <input
+          style={styles.searchInput}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por paciente o ID..."
+        />
 
-        {!loading && invoices.length > 0 && (
+        {!loading && filteredInvoices.length === 0 && <p>No hay facturas registradas.</p>}
+
+        {!loading && filteredInvoices.length > 0 && (
           <table style={styles.table}>
             <thead>
               <tr>
@@ -332,7 +465,7 @@ export function BillingPage({ onBack }: BillingPageProps) {
             </thead>
 
             <tbody>
-              {invoices.map((invoice) => (
+              {filteredInvoices.map((invoice) => (
                 <tr key={invoice.id}>
                   <td style={styles.td}>{invoice.patientName ?? invoice.patientId}</td>
 
@@ -345,12 +478,21 @@ export function BillingPage({ onBack }: BillingPageProps) {
                   </td>
 
                   <td style={styles.td}>
-                    <button
-                      style={styles.deleteButton}
-                      onClick={() => handleDelete(invoice.id)}
-                    >
-                      Eliminar
-                    </button>
+                    <div style={styles.actions}>
+                      <button
+                        style={styles.viewButton}
+                        onClick={() => handleViewInvoice(invoice.id)}
+                      >
+                        Ver detalle
+                      </button>
+
+                      <button
+                        style={styles.deleteButton}
+                        onClick={() => handleDelete(invoice.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -358,6 +500,69 @@ export function BillingPage({ onBack }: BillingPageProps) {
           </table>
         )}
       </section>
+
+      {selectedInvoice && (
+        <section style={styles.invoiceDetailCard}>
+          <div style={styles.detailsHeader}>
+            <h2 style={styles.sectionTitle}>Detalle de factura</h2>
+            <div style={styles.actions}>
+              <button style={styles.addButton} type="button" onClick={handlePrintInvoice}>
+                Imprimir
+              </button>
+              <button
+                style={styles.viewButton}
+                type="button"
+                onClick={() => handleEmailInvoice(selectedInvoice)}
+              >
+                Enviar correo
+              </button>
+              <button
+                style={styles.whatsAppButton}
+                type="button"
+                onClick={() => handleWhatsAppInvoice(selectedInvoice)}
+              >
+                Enviar WhatsApp
+              </button>
+              <button
+                style={styles.removeButton}
+                type="button"
+                onClick={() => setSelectedInvoice(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+          <div style={styles.invoiceSummary}>
+            <span>Paciente: {selectedInvoice.patientName ?? selectedInvoice.patientId}</span>
+            <span>Correo: {selectedInvoice.patientEmail || "Sin correo"}</span>
+            <span>WhatsApp: {selectedInvoice.patientWhatsApp || "Sin WhatsApp"}</span>
+            <span>Fecha: {new Date(selectedInvoice.createdAtUtc).toLocaleString()}</span>
+            <strong>Total: ${selectedInvoice.total.toFixed(2)}</strong>
+          </div>
+
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Descripción</th>
+                <th style={styles.th}>Cantidad</th>
+                <th style={styles.th}>Precio</th>
+                <th style={styles.th}>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedInvoice.details.map((detail) => (
+                <tr key={detail.id}>
+                  <td style={styles.td}>{detail.description}</td>
+                  <td style={styles.td}>{detail.quantity}</td>
+                  <td style={styles.td}>${detail.unitPrice.toFixed(2)}</td>
+                  <td style={styles.td}>${detail.lineTotal.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
     </main>
   );
 }
@@ -407,6 +612,15 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
     overflowX: "auto",
   },
+  invoiceDetailCard: {
+    maxWidth: "1200px",
+    margin: "0 auto 24px auto",
+    padding: "24px",
+    borderRadius: "18px",
+    background: "white",
+    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
+    overflowX: "auto",
+  },
   sectionTitle: {
     marginTop: 0,
     color: "#111827",
@@ -431,8 +645,8 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #d1d5db",
     borderRadius: "10px",
     fontSize: "15px",
-    background: "#3b3b3b",
-    color: "white",
+    background: "white",
+    color: "#111827",
   },
   detailsHeader: {
     display: "flex",
@@ -471,7 +685,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px 14px",
     border: "none",
     borderRadius: "10px",
-    background: "#111827",
+    background: "#334155",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
@@ -480,7 +694,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "12px 14px",
     border: "none",
     borderRadius: "10px",
-    background: "#ef4444",
+    background: "#b91c1c",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
@@ -489,20 +703,49 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "13px 18px",
     border: "none",
     borderRadius: "10px",
-    background: "#2563eb",
+    background: "#0f766e",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
   },
   message: {
     marginTop: "16px",
-    color: "#2563eb",
+    color: "#0f766e",
     fontWeight: "bold",
     textAlign: "center",
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
+  },
+  catalogBox: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "8px",
+    padding: "12px",
+    borderRadius: "10px",
+    background: "#f8fafc",
+  },
+  catalogButton: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "8px",
+    padding: "10px",
+    border: "1px solid #dbe4ea",
+    borderRadius: "8px",
+    background: "white",
+    color: "#111827",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  searchInput: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "12px",
+    marginBottom: "18px",
+    border: "1px solid #d1d5db",
+    borderRadius: "10px",
+    fontSize: "15px",
   },
   th: {
     textAlign: "left",
@@ -519,7 +762,40 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#ef4444",
+    background: "#b91c1c",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+  viewButton: {
+    padding: "8px 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "#0f766e",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+  actions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  invoiceSummary: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    gap: "12px",
+    padding: "14px",
+    marginBottom: "14px",
+    borderRadius: "10px",
+    background: "#f8fafc",
+    color: "#111827",
+  },
+  whatsAppButton: {
+    padding: "10px 14px",
+    border: "none",
+    borderRadius: "10px",
+    background: "#0f766e",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",

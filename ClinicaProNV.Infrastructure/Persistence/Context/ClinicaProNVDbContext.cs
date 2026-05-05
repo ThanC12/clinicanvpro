@@ -19,9 +19,12 @@ public class ClinicaProNVDbContext : DbContext
 
     // ================= CORE =================
     public DbSet<Patient> Patients => Set<Patient>();
+    public DbSet<PatientRecord> PatientRecords => Set<PatientRecord>();
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<ClinicalNote> ClinicalNotes => Set<ClinicalNote>();
+    public DbSet<Prescription> Prescriptions => Set<Prescription>();
+    public DbSet<PrescriptionDetail> PrescriptionDetails => Set<PrescriptionDetail>();
 
     // ================= PHARMACY =================
     public DbSet<ClinicaProNV.Domain.Pharmacy.Medicine> Medicines 

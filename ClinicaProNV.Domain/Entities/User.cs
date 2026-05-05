@@ -19,5 +19,6 @@ public class User : BaseEntity
         IsActive = true;
     }
 
+    public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;
 }

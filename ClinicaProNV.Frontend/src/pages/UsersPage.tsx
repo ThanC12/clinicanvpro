@@ -6,6 +6,7 @@ type User = {
   email: string;
   isActive: boolean;
   createdAtUtc: string;
+  roles: string[];
 };
 
 type Role = {
@@ -21,8 +22,12 @@ export function UsersPage({ onBack }: UsersPageProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<Record<string, string>>({});
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState("Recepcion");
 
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   async function loadData() {
@@ -74,6 +79,82 @@ export function UsersPage({ onBack }: UsersPageProps) {
     }
   }
 
+  async function handleCreateUser(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!newEmail.trim()) {
+      setMessage("Ingrese el correo del usuario.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setMessage("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setMessage("Creando usuario...");
+
+      await apiRequest<void>("/admin/users", {
+        method: "POST",
+        body: JSON.stringify({
+          email: newEmail,
+          password: newPassword,
+          role: newRole,
+        }),
+      });
+
+      setNewEmail("");
+      setNewPassword("");
+      setNewRole("Recepcion");
+      setMessage("Usuario creado correctamente.");
+      await loadData();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al crear usuario");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleUser(user: User) {
+    try {
+      setMessage(user.isActive ? "Desactivando usuario..." : "Activando usuario...");
+
+      await apiRequest<void>(
+        `/admin/users/${user.id}/${user.isActive ? "deactivate" : "activate"}`,
+        { method: "POST" }
+      );
+
+      setMessage(user.isActive ? "Usuario desactivado." : "Usuario activado.");
+      await loadData();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al cambiar estado");
+    }
+  }
+
+  async function handleRemoveRole(userId: string, roleName: string) {
+    const confirmed = window.confirm(`¿Quitar rol ${roleName} de este usuario?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setMessage("Quitando rol...");
+
+      await apiRequest<void>(
+        `/admin/users/${userId}/roles/${encodeURIComponent(roleName)}`,
+        { method: "DELETE" }
+      );
+
+      setMessage("Rol quitado correctamente.");
+      await loadData();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al quitar rol");
+    }
+  }
+
   useEffect(() => {
     loadData();
   }, []);
@@ -92,6 +173,53 @@ export function UsersPage({ onBack }: UsersPageProps) {
       </section>
 
       <section style={styles.card}>
+        <h2 style={styles.sectionTitle}>Crear usuario</h2>
+
+        <form style={styles.form} onSubmit={handleCreateUser}>
+          <label style={styles.label}>
+            Correo
+            <input
+              style={styles.input}
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              type="email"
+              placeholder="usuario@clinica.com"
+            />
+          </label>
+
+          <label style={styles.label}>
+            Contraseña
+            <input
+              style={styles.input}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              type="password"
+              placeholder="Mínimo 6 caracteres"
+            />
+          </label>
+
+          <label style={styles.label}>
+            Rol inicial
+            <select
+              style={styles.input}
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+            >
+              {roles.map((role) => (
+                <option key={role.id} value={role.name}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button style={styles.assignButton} type="submit" disabled={saving}>
+            {saving ? "Creando..." : "Crear usuario"}
+          </button>
+        </form>
+      </section>
+
+      <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Listado de usuarios</h2>
 
         {loading && <p>Cargando usuarios y roles...</p>}
@@ -106,9 +234,10 @@ export function UsersPage({ onBack }: UsersPageProps) {
               <tr>
                 <th style={styles.th}>Correo</th>
                 <th style={styles.th}>Estado</th>
+                <th style={styles.th}>Roles actuales</th>
                 <th style={styles.th}>Fecha registro</th>
                 <th style={styles.th}>Rol a asignar</th>
-                <th style={styles.th}>Acción</th>
+                <th style={styles.th}>Acciones</th>
               </tr>
             </thead>
 
@@ -118,6 +247,22 @@ export function UsersPage({ onBack }: UsersPageProps) {
                   <td style={styles.td}>{user.email}</td>
 
                   <td style={styles.td}>{user.isActive ? "Activo" : "Inactivo"}</td>
+
+                  <td style={styles.td}>
+                    <div style={styles.roleList}>
+                      {user.roles.length === 0 && <span>Sin roles</span>}
+                      {user.roles.map((roleName) => (
+                        <button
+                          key={roleName}
+                          style={styles.roleBadge}
+                          onClick={() => handleRemoveRole(user.id, roleName)}
+                          title="Quitar rol"
+                        >
+                          {roleName} ×
+                        </button>
+                      ))}
+                    </div>
+                  </td>
 
                   <td style={styles.td}>
                     {new Date(user.createdAtUtc).toLocaleString()}
@@ -140,12 +285,21 @@ export function UsersPage({ onBack }: UsersPageProps) {
                   </td>
 
                   <td style={styles.td}>
-                    <button
-                      style={styles.assignButton}
-                      onClick={() => handleAssignRole(user.id)}
-                    >
-                      Asignar rol
-                    </button>
+                    <div style={styles.actions}>
+                      <button
+                        style={styles.assignButton}
+                        onClick={() => handleAssignRole(user.id)}
+                      >
+                        Asignar rol
+                      </button>
+
+                      <button
+                        style={user.isActive ? styles.deactivateButton : styles.activateButton}
+                        onClick={() => handleToggleUser(user)}
+                      >
+                        {user.isActive ? "Desactivar" : "Activar"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -208,9 +362,22 @@ const styles: Record<string, React.CSSProperties> = {
   },
   message: {
     marginTop: "16px",
-    color: "#2563eb",
+    color: "#0f766e",
     fontWeight: "bold",
     textAlign: "center",
+  },
+  form: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr auto",
+    gap: "16px",
+    alignItems: "end",
+  },
+  label: {
+    display: "grid",
+    gap: "8px",
+    color: "#374151",
+    fontSize: "14px",
+    fontWeight: "bold",
   },
   table: {
     width: "100%",
@@ -233,14 +400,51 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #d1d5db",
     borderRadius: "10px",
     fontSize: "14px",
-    background: "#3b3b3b",
-    color: "white",
+    background: "white",
+    color: "#111827",
   },
   assignButton: {
     padding: "9px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#2563eb",
+    background: "#0f766e",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+  actions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  roleList: {
+    display: "flex",
+    gap: "6px",
+    flexWrap: "wrap",
+  },
+  roleBadge: {
+    padding: "6px 8px",
+    border: "none",
+    borderRadius: "999px",
+    background: "#ecfdf5",
+    color: "#065f46",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+  activateButton: {
+    padding: "9px 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "#0f766e",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+  deactivateButton: {
+    padding: "9px 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "#b91c1c",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",

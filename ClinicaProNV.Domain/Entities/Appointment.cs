@@ -42,6 +42,26 @@ public class Appointment : BaseEntity
         Status = AppointmentStatus.Completed;
     }
 
+    public void Update(Guid patientId, Guid doctorId, DateTime date, string reason)
+    {
+        if (Status != AppointmentStatus.Scheduled)
+            throw new InvalidOperationException("Solo se pueden editar citas programadas.");
+
+        if (patientId == Guid.Empty)
+            throw new ArgumentException("El paciente es obligatorio.", nameof(patientId));
+
+        if (doctorId == Guid.Empty)
+            throw new ArgumentException("El doctor es obligatorio.", nameof(doctorId));
+
+        if (date == default)
+            throw new ArgumentException("La fecha de la cita es obligatoria.", nameof(date));
+
+        PatientId = patientId;
+        DoctorId = doctorId;
+        Date = date;
+        Reason = string.IsNullOrWhiteSpace(reason) ? "Sin motivo" : reason.Trim();
+    }
+
     public void Cancel()
     {
         Status = AppointmentStatus.Cancelled;

@@ -10,6 +10,7 @@ using ClinicaProNV.Infrastructure.Appointments;
 using ClinicaProNV.Infrastructure.Persistence.Context;
 using ClinicaProNV.Infrastructure.Repositories.Auth;
 using ClinicaProNV.Infrastructure.Security;
+using ClinicaProNV.Api.Services.WhatsApp;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,6 +21,9 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient<IWhatsAppSender, MetaWhatsAppSender>();
+builder.Services.Configure<WhatsAppOptions>(builder.Configuration.GetSection("WhatsApp"));
+builder.Services.AddScoped<WhatsAppNotificationService>();
 
 // DB
 builder.Services.AddDbContext<ClinicaProNVDbContext>(options =>

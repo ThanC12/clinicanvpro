@@ -1,6 +1,7 @@
 using ClinicaProNV.Api.Contracts.ClinicInvoices;
 using ClinicaProNV.Domain.Billing;
 using ClinicaProNV.Infrastructure.Persistence.Context;
+using ClinicaProNV.Api.Services.WhatsApp;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,14 @@ public class ClinicInvoicesController : ControllerBase
                     .Where(p => p.Id == i.PatientId)
                     .Select(p => p.FullName)
                     .FirstOrDefault(),
+                PatientEmail = _db.Patients
+                    .Where(p => p.Id == i.PatientId)
+                    .Select(p => p.Email)
+                    .FirstOrDefault(),
+                PatientWhatsApp = _db.Patients
+                    .Where(p => p.Id == i.PatientId)
+                    .Select(p => p.WhatsAppNumber)
+                    .FirstOrDefault(),
                 i.Total,
                 i.CreatedAtUtc,
                 DetailsCount = _db.ClinicInvoiceDetails
@@ -54,6 +63,14 @@ public class ClinicInvoicesController : ControllerBase
                 PatientName = _db.Patients
                     .Where(p => p.Id == i.PatientId)
                     .Select(p => p.FullName)
+                    .FirstOrDefault(),
+                PatientEmail = _db.Patients
+                    .Where(p => p.Id == i.PatientId)
+                    .Select(p => p.Email)
+                    .FirstOrDefault(),
+                PatientWhatsApp = _db.Patients
+                    .Where(p => p.Id == i.PatientId)
+                    .Select(p => p.WhatsAppNumber)
                     .FirstOrDefault(),
                 i.Total,
                 i.CreatedAtUtc,
@@ -83,6 +100,7 @@ public class ClinicInvoicesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateClinicInvoiceRequest request,
+        [FromServices] WhatsAppNotificationService whatsApp,
         CancellationToken ct)
     {
         if (request is null)
@@ -144,6 +162,7 @@ public class ClinicInvoicesController : ControllerBase
 
         _db.ClinicInvoiceDetails.AddRange(details);
         await _db.SaveChangesAsync(ct);
+        await whatsApp.NotifyClinicInvoiceCreatedAsync(invoice.Id, ct);
 
         return Created($"/api/clinic-invoices/{invoice.Id}", new
         {

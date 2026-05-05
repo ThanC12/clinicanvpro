@@ -30,6 +30,15 @@ public class PatientsController : ControllerBase
                 p.Id,
                 p.FullName,
                 p.Identification,
+                p.Email,
+                p.WhatsAppNumber,
+                p.BirthDate,
+                p.Gender,
+                p.Address,
+                p.EmergencyContactName,
+                p.EmergencyContactPhone,
+                p.BloodType,
+                RecordsCount = _db.PatientRecords.Count(r => r.PatientId == p.Id),
                 p.CreatedAtUtc
             })
             .ToListAsync();
@@ -66,7 +75,17 @@ public class PatientsController : ControllerBase
             return Conflict("Ya existe un paciente con esa identificación.");
         }
 
-        var patient = new Patient(fullName, identification);
+        var patient = new Patient(
+            fullName,
+            identification,
+            request.Email,
+            request.WhatsAppNumber,
+            request.BirthDate,
+            request.Gender,
+            request.Address,
+            request.EmergencyContactName,
+            request.EmergencyContactPhone,
+            request.BloodType);
 
         _db.Patients.Add(patient);
         await _db.SaveChangesAsync();
@@ -76,6 +95,14 @@ public class PatientsController : ControllerBase
             patient.Id,
             patient.FullName,
             patient.Identification,
+            patient.Email,
+            patient.WhatsAppNumber,
+            patient.BirthDate,
+            patient.Gender,
+            patient.Address,
+            patient.EmergencyContactName,
+            patient.EmergencyContactPhone,
+            patient.BloodType,
             patient.CreatedAtUtc
         });
     }
@@ -115,7 +142,17 @@ public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePatientRequest
         return Conflict("Ya existe otro paciente con esa identificación.");
     }
 
-    patient.Update(request.FullName, identification);
+    patient.Update(
+        request.FullName,
+        identification,
+        request.Email,
+        request.WhatsAppNumber,
+        request.BirthDate,
+        request.Gender,
+        request.Address,
+        request.EmergencyContactName,
+        request.EmergencyContactPhone,
+        request.BloodType);
 
     await _db.SaveChangesAsync();
 
@@ -124,9 +161,105 @@ public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePatientRequest
         patient.Id,
         patient.FullName,
         patient.Identification,
+        patient.Email,
+        patient.WhatsAppNumber,
+        patient.BirthDate,
+        patient.Gender,
+        patient.Address,
+        patient.EmergencyContactName,
+        patient.EmergencyContactPhone,
+        patient.BloodType,
         patient.CreatedAtUtc
     });
 }
+
+    [HttpGet("{id:guid}/records")]
+    public async Task<IActionResult> GetRecords(Guid id, CancellationToken ct)
+    {
+        var patientExists = await _db.Patients.AnyAsync(p => p.Id == id, ct);
+
+        if (!patientExists)
+        {
+            return NotFound("Paciente no encontrado.");
+        }
+
+        var records = await _db.PatientRecords
+            .Where(r => r.PatientId == id)
+            .OrderByDescending(r => r.CreatedAtUtc)
+            .Select(r => new
+            {
+                r.Id,
+                r.PatientId,
+                r.ReasonForVisit,
+                r.CurrentCondition,
+                r.Symptoms,
+                r.Allergies,
+                r.MedicalHistory,
+                r.VitalSigns,
+                r.PhysicalSheetReference,
+                r.PhysicalSheetTranscript,
+                r.Notes,
+                r.CreatedAtUtc
+            })
+            .ToListAsync(ct);
+
+        return Ok(records);
+    }
+
+    [HttpPost("{id:guid}/records")]
+    public async Task<IActionResult> CreateRecord(
+        Guid id,
+        [FromBody] CreatePatientRecordRequest request,
+        CancellationToken ct)
+    {
+        if (request is null)
+        {
+            return BadRequest("El cuerpo de la solicitud es obligatorio.");
+        }
+
+        var patientExists = await _db.Patients.AnyAsync(p => p.Id == id, ct);
+
+        if (!patientExists)
+        {
+            return NotFound("Paciente no encontrado.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ReasonForVisit))
+        {
+            return BadRequest("El motivo de ingreso es obligatorio.");
+        }
+
+        var record = new PatientRecord(
+            id,
+            request.ReasonForVisit,
+            request.CurrentCondition,
+            request.Symptoms,
+            request.Allergies,
+            request.MedicalHistory,
+            request.VitalSigns,
+            request.PhysicalSheetReference,
+            request.PhysicalSheetTranscript,
+            request.Notes);
+
+        _db.PatientRecords.Add(record);
+        await _db.SaveChangesAsync(ct);
+
+        return Created($"/api/patients/{id}/records/{record.Id}", new
+        {
+            record.Id,
+            record.PatientId,
+            record.ReasonForVisit,
+            record.CurrentCondition,
+            record.Symptoms,
+            record.Allergies,
+            record.MedicalHistory,
+            record.VitalSigns,
+            record.PhysicalSheetReference,
+            record.PhysicalSheetTranscript,
+            record.Notes,
+            record.CreatedAtUtc
+        });
+    }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
