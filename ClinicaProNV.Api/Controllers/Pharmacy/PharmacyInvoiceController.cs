@@ -30,6 +30,9 @@ public class PharmacyInvoiceController : ControllerBase
                     .Where(p => p.Id == i.PatientId)
                     .Select(p => p.FullName)
                     .FirstOrDefault(),
+                i.CustomerName,
+                i.CustomerIdentification,
+                i.CustomerPhone,
                 i.Total,
                 i.CreatedAtUtc,
                 DetailsCount = db.PharmacyInvoiceDetails
@@ -76,20 +79,24 @@ public class PharmacyInvoiceController : ControllerBase
             return BadRequest("El cuerpo de la solicitud es obligatorio.");
         }
 
-        if (request.PatientId == Guid.Empty)
-        {
-            return BadRequest("Debe seleccionar un paciente.");
-        }
-
         if (request.Items is null || request.Items.Count == 0)
         {
             return BadRequest("Debe ingresar al menos un medicamento.");
         }
 
-        var patientExists = await db.Patients.AnyAsync(p => p.Id == request.PatientId, ct);
-        if (!patientExists)
+        Patient? patient = null;
+
+        if (request.PatientId is not null && request.PatientId != Guid.Empty)
         {
-            return NotFound("El paciente seleccionado no existe.");
+            patient = await db.Patients.FirstOrDefaultAsync(p => p.Id == request.PatientId, ct);
+            if (patient is null)
+            {
+                return NotFound("El paciente seleccionado no existe.");
+            }
+        }
+        else if (string.IsNullOrWhiteSpace(request.CustomerName))
+        {
+            return BadRequest("Ingrese el nombre del cliente para ventas externas.");
         }
 
         var medicineIds = request.Items.Select(i => i.MedicineId).Distinct().ToList();
@@ -97,7 +104,11 @@ public class PharmacyInvoiceController : ControllerBase
             .Where(m => medicineIds.Contains(m.Id))
             .ToDictionaryAsync(m => m.Id, ct);
 
-        var invoice = new PharmacyInvoice(request.PatientId);
+        var invoice = new PharmacyInvoice(
+            patient?.Id,
+            patient?.FullName ?? request.CustomerName,
+            patient?.Identification ?? request.CustomerIdentification,
+            request.CustomerPhone);
 
         foreach (var item in request.Items)
         {
@@ -128,6 +139,9 @@ public class PharmacyInvoiceController : ControllerBase
         {
             invoice.Id,
             invoice.PatientId,
+            invoice.CustomerName,
+            invoice.CustomerIdentification,
+            invoice.CustomerPhone,
             invoice.Total,
             invoice.CreatedAtUtc,
             Details = invoice.Details.Select(d => new
@@ -157,6 +171,9 @@ public class PharmacyInvoiceController : ControllerBase
                     .Where(p => p.Id == i.PatientId)
                     .Select(p => p.FullName)
                     .FirstOrDefault(),
+                i.CustomerName,
+                i.CustomerIdentification,
+                i.CustomerPhone,
                 i.Total,
                 i.CreatedAtUtc,
                 Details = db.PharmacyInvoiceDetails
@@ -212,7 +229,7 @@ public class PharmacyInvoiceController : ControllerBase
 
         var patient = await db.Patients
             .Where(p => p.Id == invoice.PatientId)
-            .Select(p => new { p.FullName })
+            .Select(p => new { p.FullName, p.Id })
             .FirstOrDefaultAsync(ct);
 
         invoice.MarkDeleted(deletedByUserId, deletedByEmail, reason);
@@ -220,8 +237,8 @@ public class PharmacyInvoiceController : ControllerBase
         db.InvoiceDeletionLogs.Add(new InvoiceDeletionLog(
             "Pharmacy",
             invoice.Id,
-            invoice.PatientId,
-            patient?.FullName ?? "Sin nombre",
+            patient?.Id ?? Guid.Empty,
+            patient?.FullName ?? invoice.CustomerName,
             invoice.Total,
             deletedByUserId,
             deletedByEmail,
@@ -249,7 +266,10 @@ public class PharmacyInvoiceController : ControllerBase
     }
 
     public sealed record CreatePharmacyInvoiceRequest(
-        Guid PatientId,
+        Guid? PatientId,
+        string CustomerName,
+        string CustomerIdentification,
+        string CustomerPhone,
         List<CreatePharmacyInvoiceItemRequest> Items);
 
     public sealed record CreatePharmacyInvoiceItemRequest(

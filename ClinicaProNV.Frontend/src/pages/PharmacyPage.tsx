@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../api/api";
+import { pageStyles } from "../styles/pageStyles";
 
 type Medicine = {
   id: string;
@@ -14,17 +15,22 @@ type Patient = {
   id: string;
   fullName: string;
   identification: string;
+  whatsAppNumber?: string;
 };
 
 type SaleItemInput = {
   medicineId: string;
   quantity: string;
+  hasPrescription: boolean;
 };
 
 type PharmacyInvoice = {
   id: string;
-  patientId: string;
+  patientId: string | null;
   patientName: string | null;
+  customerName: string;
+  customerIdentification: string;
+  customerPhone: string;
   total: number;
   createdAtUtc: string;
   detailsCount: number;
@@ -45,19 +51,27 @@ type PharmacyPageProps = {
   onBack: () => void;
 };
 
+type PharmacyView = "sale" | "invoices" | "medicines" | "voided";
+
 export function PharmacyPage({ onBack }: PharmacyPageProps) {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [invoices, setInvoices] = useState<PharmacyInvoice[]>([]);
   const [deletedInvoices, setDeletedInvoices] = useState<DeletedPharmacyInvoice[]>([]);
+  const [view, setView] = useState<PharmacyView>("sale");
   const [name, setName] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
   const [stock, setStock] = useState("");
   const [requiresPrescription, setRequiresPrescription] = useState(false);
   const [editingMedicineId, setEditingMedicineId] = useState<string | null>(null);
+  const [saleCustomerType, setSaleCustomerType] = useState<"registered" | "external">("external");
+  const [patientIdentification, setPatientIdentification] = useState("");
   const [salePatientId, setSalePatientId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerIdentification, setCustomerIdentification] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [saleItems, setSaleItems] = useState<SaleItemInput[]>([
-    { medicineId: "", quantity: "1" },
+    { medicineId: "", quantity: "1", hasPrescription: false },
   ]);
 
   const [search, setSearch] = useState("");
@@ -181,14 +195,47 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
     setRequiresPrescription(false);
   }
 
-  function updateSaleItem(index: number, field: keyof SaleItemInput, value: string) {
+  function updateSaleItem(index: number, field: keyof SaleItemInput, value: string | boolean) {
     setSaleItems((current) =>
       current.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
   }
 
   function addSaleItem() {
-    setSaleItems((current) => [...current, { medicineId: "", quantity: "1" }]);
+    setSaleItems((current) => [
+      ...current,
+      { medicineId: "", quantity: "1", hasPrescription: false },
+    ]);
+  }
+
+  function addMedicineToSale(medicine: Medicine) {
+    if (medicine.stock <= 0) {
+      setMessage("Este medicamento no tiene stock disponible.");
+      return;
+    }
+
+    setSaleItems((current) => {
+      const existingIndex = current.findIndex((item) => item.medicineId === medicine.id);
+
+      if (existingIndex >= 0) {
+        return current.map((item, index) =>
+          index === existingIndex
+            ? { ...item, quantity: String(Number(item.quantity || "0") + 1) }
+            : item
+        );
+      }
+
+      const emptyIndex = current.findIndex((item) => !item.medicineId);
+      if (emptyIndex >= 0) {
+        return current.map((item, index) =>
+          index === emptyIndex
+            ? { medicineId: medicine.id, quantity: "1", hasPrescription: false }
+            : item
+        );
+      }
+
+      return [...current, { medicineId: medicine.id, quantity: "1", hasPrescription: false }];
+    });
   }
 
   function removeSaleItem(index: number) {
@@ -198,15 +245,34 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
   }
 
   function clearSale() {
+    setSaleCustomerType("external");
+    setPatientIdentification("");
     setSalePatientId("");
-    setSaleItems([{ medicineId: "", quantity: "1" }]);
+    setCustomerName("");
+    setCustomerIdentification("");
+    setCustomerPhone("");
+    setSaleItems([{ medicineId: "", quantity: "1", hasPrescription: false }]);
   }
 
   async function handleSaleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    if (!salePatientId) {
-      setMessage("Seleccione un paciente para la venta.");
+    const selectedPatient = patients.find((patient) => patient.id === salePatientId);
+
+    if (saleCustomerType === "registered") {
+      if (!patientIdentification.trim()) {
+        setMessage("Ingrese la cédula del paciente.");
+        return;
+      }
+
+      if (!selectedPatient) {
+        setMessage("No existe un paciente con esa cédula.");
+        return;
+      }
+    }
+
+    if (saleCustomerType === "external" && !customerName.trim()) {
+      setMessage("Ingrese el nombre del cliente.");
       return;
     }
 
@@ -225,6 +291,16 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
       return;
     }
 
+    const missingPrescription = saleItems.some((item) => {
+      const medicine = medicines.find((med) => med.id === item.medicineId);
+      return medicine?.requiresPrescription && !item.hasPrescription;
+    });
+
+    if (missingPrescription) {
+      setMessage("Hay medicamentos que requieren receta. Marque 'Receta vista' para continuar.");
+      return;
+    }
+
     try {
       setSaving(true);
       setMessage("Registrando venta...");
@@ -232,7 +308,19 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
       await apiRequest<void>("/pharmacy/invoices", {
         method: "POST",
         body: JSON.stringify({
-          patientId: salePatientId,
+          patientId: saleCustomerType === "registered" ? salePatientId : null,
+          customerName:
+            saleCustomerType === "registered"
+              ? selectedPatient?.fullName ?? ""
+              : customerName,
+          customerIdentification:
+            saleCustomerType === "registered"
+              ? selectedPatient?.identification ?? ""
+              : customerIdentification,
+          customerPhone:
+            saleCustomerType === "registered"
+              ? selectedPatient?.whatsAppNumber ?? ""
+              : customerPhone,
           items: cleanItems,
         }),
       });
@@ -281,6 +369,19 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (saleCustomerType !== "registered") {
+      setSalePatientId("");
+      return;
+    }
+
+    const identification = patientIdentification.trim();
+    const patient = patients.find((item) => item.identification === identification);
+    setSalePatientId(patient?.id ?? "");
+  }, [patientIdentification, patients, saleCustomerType]);
+
+  const selectedSalePatient = patients.find((patient) => patient.id === salePatientId);
+
   const saleTotal = useMemo(() => {
     return saleItems.reduce((sum, item) => {
       const medicine = medicines.find((med) => med.id === item.medicineId);
@@ -295,6 +396,10 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
     return medicine.name.toLowerCase().includes(text);
   });
 
+  const quickSaleMedicines = medicines
+    .filter((medicine) => medicine.stock > 0)
+    .slice(0, 18);
+
   return (
     <main style={styles.page}>
       <section style={styles.header}>
@@ -308,6 +413,47 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
         </button>
       </section>
 
+      <section style={styles.tabsCard}>
+        <button
+          style={{ ...styles.tabButton, ...(view === "sale" ? styles.activeTabButton : {}) }}
+          type="button"
+          onClick={() => setView("sale")}
+        >
+          Venta
+        </button>
+        <button
+          style={{
+            ...styles.tabButton,
+            ...(view === "invoices" ? styles.activeTabButton : {}),
+          }}
+          type="button"
+          onClick={() => setView("invoices")}
+        >
+          Facturas
+        </button>
+        <button
+          style={{
+            ...styles.tabButton,
+            ...(view === "medicines" ? styles.activeTabButton : {}),
+          }}
+          type="button"
+          onClick={() => setView("medicines")}
+        >
+          Medicamentos
+        </button>
+        <button
+          style={{
+            ...styles.tabButton,
+            ...(view === "voided" ? styles.activeTabButton : {}),
+          }}
+          type="button"
+          onClick={() => setView("voided")}
+        >
+          Anuladas
+        </button>
+      </section>
+
+      {view === "sale" && (
       <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Venta de medicamentos de farmacia</h2>
 
@@ -315,27 +461,114 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
 
         {!loading && (
           <form onSubmit={handleSaleSubmit} style={styles.saleForm}>
-            <label style={styles.label}>
-              Paciente
-              <select
-                style={styles.input}
-                value={salePatientId}
-                onChange={(e) => setSalePatientId(e.target.value)}
+            <div style={styles.customerMode}>
+              <button
+                style={{
+                  ...styles.modeButton,
+                  ...(saleCustomerType === "external" ? styles.activeModeButton : {}),
+                }}
+                type="button"
+                onClick={() => setSaleCustomerType("external")}
               >
-                <option value="">Seleccione un paciente</option>
-                {patients.map((patient) => (
-                  <option key={patient.id} value={patient.id}>
-                    {patient.fullName} - {patient.identification}
-                  </option>
-                ))}
-              </select>
-            </label>
+                Cliente externo
+              </button>
+              <button
+                style={{
+                  ...styles.modeButton,
+                  ...(saleCustomerType === "registered" ? styles.activeModeButton : {}),
+                }}
+                type="button"
+                onClick={() => setSaleCustomerType("registered")}
+              >
+                Paciente por cédula
+              </button>
+            </div>
+
+            {saleCustomerType === "registered" && (
+              <div style={styles.registeredCustomerGrid}>
+                <label style={styles.label}>
+                  Cédula del paciente
+                  <input
+                    style={styles.input}
+                    value={patientIdentification}
+                    onChange={(e) => setPatientIdentification(e.target.value)}
+                    placeholder="Ingrese número de cédula"
+                  />
+                </label>
+
+                <div style={styles.customerPreview}>
+                  <span>Paciente</span>
+                  <strong>{selectedSalePatient?.fullName ?? "No encontrado"}</strong>
+                  <small>
+                    {selectedSalePatient
+                      ? selectedSalePatient.identification
+                      : "Debe estar registrado en el sistema"}
+                  </small>
+                </div>
+              </div>
+            )}
+
+            {saleCustomerType === "external" && (
+              <div style={styles.externalCustomerGrid}>
+                <label style={styles.label}>
+                  Nombre del cliente
+                  <input
+                    style={styles.input}
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Ej: Juan Pérez"
+                  />
+                </label>
+
+                <label style={styles.label}>
+                  Cédula / documento
+                  <input
+                    style={styles.input}
+                    value={customerIdentification}
+                    onChange={(e) => setCustomerIdentification(e.target.value)}
+                    placeholder="Opcional"
+                  />
+                </label>
+
+                <label style={styles.label}>
+                  Teléfono / WhatsApp
+                  <input
+                    style={styles.input}
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Opcional"
+                  />
+                </label>
+              </div>
+            )}
 
             <div style={styles.detailsHeader}>
               <h3 style={styles.subTitle}>Medicamentos</h3>
               <button style={styles.addButton} type="button" onClick={addSaleItem}>
                 Agregar medicamento
               </button>
+            </div>
+
+            <div style={styles.quickCatalogBox}>
+              {quickSaleMedicines.length === 0 && (
+                <p style={styles.catalogEmpty}>No hay medicamentos con stock disponible.</p>
+              )}
+
+              {quickSaleMedicines.map((medicine) => (
+                <button
+                  key={medicine.id}
+                  style={styles.quickMedicineButton}
+                  type="button"
+                  onClick={() => addMedicineToSale(medicine)}
+                >
+                  <span>{medicine.name}</span>
+                  <strong>${medicine.unitPrice.toFixed(2)}</strong>
+                  <small>
+                    Stock {medicine.stock}
+                    {medicine.requiresPrescription ? " · Receta" : ""}
+                  </small>
+                </button>
+              ))}
             </div>
 
             {saleItems.map((item, index) => {
@@ -350,7 +583,10 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
                     <select
                       style={styles.input}
                       value={item.medicineId}
-                      onChange={(e) => updateSaleItem(index, "medicineId", e.target.value)}
+                      onChange={(e) => {
+                        updateSaleItem(index, "medicineId", e.target.value);
+                        updateSaleItem(index, "hasPrescription", false);
+                      }}
                     >
                       <option value="">Seleccione medicamento</option>
                       {medicines.map((medicine) => (
@@ -379,6 +615,25 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
                     <strong>${subtotal.toFixed(2)}</strong>
                   </div>
 
+                  <label
+                    style={{
+                      ...styles.prescriptionCheck,
+                      ...(medicine?.requiresPrescription
+                        ? styles.prescriptionRequired
+                        : styles.prescriptionDisabled),
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.hasPrescription}
+                      disabled={!medicine?.requiresPrescription}
+                      onChange={(e) =>
+                        updateSaleItem(index, "hasPrescription", e.target.checked)
+                      }
+                    />
+                    Receta vista
+                  </label>
+
                   <button
                     style={styles.deleteButton}
                     type="button"
@@ -404,7 +659,9 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
 
         {message && <p style={styles.message}>{message}</p>}
       </section>
+      )}
 
+      {view === "medicines" && (
       <section style={styles.card}>
         <h2 style={styles.sectionTitle}>
           {editingMedicineId ? "Editar medicamento" : "Registrar medicamento"}
@@ -474,7 +731,9 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
 
         {message && <p style={styles.message}>{message}</p>}
       </section>
+      )}
 
+      {view === "invoices" && (
       <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Ventas y facturas de farmacia</h2>
 
@@ -494,7 +753,14 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
             <tbody>
               {invoices.map((invoice) => (
                 <tr key={invoice.id}>
-                  <td style={styles.td}>{invoice.patientName ?? invoice.patientId}</td>
+                  <td style={styles.td}>
+                    {invoice.patientName ?? invoice.customerName}
+                    <div style={styles.smallText}>
+                      {invoice.patientName
+                        ? "Paciente registrado"
+                        : invoice.customerIdentification || "Cliente externo"}
+                    </div>
+                  </td>
                   <td style={styles.td}>${invoice.total.toFixed(2)}</td>
                   <td style={styles.td}>{invoice.detailsCount}</td>
                   <td style={styles.td}>
@@ -514,7 +780,9 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
           </table>
         )}
       </section>
+      )}
 
+      {view === "voided" && (
       <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Ventas de farmacia anuladas</h2>
 
@@ -545,7 +813,9 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
           </table>
         )}
       </section>
+      )}
 
+      {view === "medicines" && (
       <section style={styles.card}>
         <h2 style={styles.sectionTitle}>Listado de medicamentos</h2>
 
@@ -612,62 +882,37 @@ export function PharmacyPage({ onBack }: PharmacyPageProps) {
           </table>
         )}
       </section>
+      )}
     </main>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f6fb",
-    padding: "32px",
-    fontFamily: "Arial, sans-serif",
-  },
-  header: {
+  ...pageStyles,
+  tabsCard: {
     maxWidth: "1200px",
     margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "34px",
-  },
-  subtitle: {
-    margin: "6px 0 0 0",
-    color: "#6b7280",
-  },
-  backButton: {
-    padding: "12px 18px",
-    border: "none",
+    padding: "6px",
     borderRadius: "10px",
-    background: "#111827",
-    color: "white",
+    background: "#e7f1f4",
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: "6px",
+  },
+  tabButton: {
+    minHeight: "42px",
+    padding: "10px 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "transparent",
+    color: "#1f5d73",
     fontWeight: "bold",
     cursor: "pointer",
   },
-  card: {
-    maxWidth: "1200px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
+  activeTabButton: {
     background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    overflowX: "auto",
-  },
-  sectionTitle: {
-    marginTop: 0,
-    color: "#111827",
-  },
-  subTitle: {
-    margin: 0,
-    color: "#111827",
+    color: "#0e9384",
+    boxShadow: "0 1px 6px rgba(15, 23, 42, 0.1)",
   },
   form: {
     display: "grid",
@@ -679,146 +924,102 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gap: "16px",
   },
-  saleRow: {
+  customerMode: {
     display: "grid",
-    gridTemplateColumns: "2fr 0.7fr 0.8fr auto",
-    gap: "12px",
-    alignItems: "end",
-  },
-  detailsHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  addButton: {
-    padding: "10px 14px",
-    border: "none",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "8px",
+    padding: "4px",
     borderRadius: "10px",
-    background: "#334155",
-    color: "white",
+    background: "#e7f1f4",
+  },
+  modeButton: {
+    padding: "11px 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "transparent",
+    color: "#1f5d73",
     fontWeight: "bold",
     cursor: "pointer",
   },
-  lineTotalBox: {
+  activeModeButton: {
+    background: "white",
+    color: "#0e9384",
+    boxShadow: "0 1px 6px rgba(15, 23, 42, 0.1)",
+  },
+  registeredCustomerGrid: {
     display: "grid",
-    gap: "6px",
+    gridTemplateColumns: "minmax(220px, 1fr) 1fr",
+    gap: "12px",
+    alignItems: "end",
+  },
+  externalCustomerGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "12px",
+  },
+  customerPreview: {
+    display: "grid",
+    gap: "4px",
+    padding: "12px",
+    borderRadius: "10px",
+    background: "#f8fafc",
+    color: "#12323f",
+  },
+  quickCatalogBox: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "10px",
+    padding: "12px",
+    borderRadius: "10px",
+    background: "#f8fafc",
+  },
+  quickMedicineButton: {
+    display: "grid",
+    gap: "5px",
+    minHeight: "92px",
+    padding: "12px",
+    border: "1px solid #dbe4ea",
+    borderRadius: "8px",
+    background: "white",
+    color: "#12323f",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  catalogEmpty: {
+    margin: 0,
+    color: "#64748b",
+  },
+  saleRow: {
+    display: "grid",
+    gridTemplateColumns: "2fr 0.65fr 0.75fr 0.8fr auto",
+    gap: "12px",
+    alignItems: "end",
+  },
+  prescriptionCheck: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    minHeight: "45px",
     padding: "10px 12px",
     borderRadius: "10px",
-    background: "#f3f4f6",
-    color: "#111827",
-  },
-  smallText: {
-    color: "#6b7280",
-    fontSize: "12px",
-  },
-  totalBox: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "16px",
-    borderRadius: "12px",
-    background: "#ecfdf5",
-    color: "#065f46",
-    fontSize: "18px",
-  },
-  label: {
-    display: "grid",
-    gap: "8px",
-    color: "#374151",
     fontSize: "14px",
     fontWeight: "bold",
+  },
+  prescriptionRequired: {
+    background: "#fef3c7",
+    color: "#92400e",
+  },
+  prescriptionDisabled: {
+    background: "#f4f9fb",
+    color: "#9ca3af",
   },
   checkboxLabel: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    color: "#374151",
+    color: "#284653",
     fontSize: "14px",
     fontWeight: "bold",
     paddingBottom: "12px",
-  },
-  input: {
-    padding: "12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-    background: "white",
-    color: "#111827",
-  },
-  actions: {
-    gridColumn: "1 / -1",
-    display: "flex",
-    gap: "12px",
-  },
-  saveButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#0f766e",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  cancelButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#6b7280",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  message: {
-    marginTop: "16px",
-    color: "#0f766e",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  searchInput: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "12px",
-    marginBottom: "18px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    textAlign: "left",
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#374151",
-  },
-  td: {
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#111827",
-  },
-  rowActions: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-  editButton: {
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#334155",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  deleteButton: {
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#b91c1c",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-};
+  },};

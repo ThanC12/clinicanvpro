@@ -10,6 +10,9 @@ public class PharmacyInvoiceConfiguration : IEntityTypeConfiguration<PharmacyInv
     {
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Total).HasPrecision(18,2);
+        builder.Property(x => x.CustomerName).IsRequired();
+        builder.Property(x => x.CustomerIdentification).IsRequired();
+        builder.Property(x => x.CustomerPhone).IsRequired();
         builder.OwnsMany(x => x.Details);
     }
 }

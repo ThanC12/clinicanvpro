@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../api/api";
+import { pageStyles } from "../styles/pageStyles";
 
 type Patient = {
   id: string;
@@ -49,6 +50,7 @@ export function PatientsPage({ onBack }: PatientsPageProps) {
   const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
   const [bloodType, setBloodType] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [selectedRecordId, setSelectedRecordId] = useState("");
   const [patientRecords, setPatientRecords] = useState<PatientRecord[]>([]);
   const [reasonForVisit, setReasonForVisit] = useState("");
   const [currentCondition, setCurrentCondition] = useState("");
@@ -189,7 +191,14 @@ export function PatientsPage({ onBack }: PatientsPageProps) {
 
   async function handleSelectPatientForRecord(patientId: string) {
     setSelectedPatientId(patientId);
+    setSelectedRecordId("");
     await loadPatientRecords(patientId);
+  }
+
+  async function handleViewPatientRecords(patient: Patient) {
+    await handleSelectPatientForRecord(patient.id);
+    setMessage(`Ficha abierta: ${patient.fullName}`);
+    window.scrollTo({ top: 360, behavior: "smooth" });
   }
 
   function clearRecordForm() {
@@ -285,6 +294,15 @@ export function PatientsPage({ onBack }: PatientsPageProps) {
       (patient.address ?? "").toLowerCase().includes(text)
     );
   });
+
+  const selectedPatient = patients.find((patient) => patient.id === selectedPatientId);
+  const selectedRecord = patientRecords.find((record) => record.id === selectedRecordId);
+  const lastNameFolder = selectedPatient ? getLastName(selectedPatient.fullName) : "";
+  const groupedRecords = patientRecords.reduce<Record<string, PatientRecord[]>>((groups, record) => {
+    const folder = getRecordFolder(record.reasonForVisit);
+    groups[folder] = [...(groups[folder] ?? []), record];
+    return groups;
+  }, {});
 
   return (
     <main style={styles.page}>
@@ -548,18 +566,69 @@ export function PatientsPage({ onBack }: PatientsPageProps) {
         </form>
 
         {selectedPatientId && patientRecords.length > 0 && (
-          <div style={styles.recordList}>
-            {patientRecords.map((record) => (
-              <article key={record.id} style={styles.recordItem}>
-                <strong>{record.reasonForVisit}</strong>
-                <span>{new Date(record.createdAtUtc).toLocaleString()}</span>
-                <p>{record.currentCondition || record.symptoms || "Sin detalle adicional"}</p>
-                {record.physicalSheetReference && (
-                  <small>Hoja física: {record.physicalSheetReference}</small>
-                )}
+          <>
+            <div style={styles.folderHeader}>
+              <div>
+                <span>Carpeta por apellido</span>
+                <strong>{lastNameFolder}</strong>
+              </div>
+              <div>
+                <span>Paciente</span>
+                <strong>{selectedPatient?.fullName}</strong>
+              </div>
+              <div>
+                <span>Fichas</span>
+                <strong>{patientRecords.length}</strong>
+              </div>
+            </div>
+
+            <div style={styles.folderGrid}>
+              {Object.entries(groupedRecords).map(([folder, records]) => (
+                <section key={folder} style={styles.folderBox}>
+                  <h3 style={styles.folderTitle}>{folder}</h3>
+                  <div style={styles.recordList}>
+                    {records.map((record) => (
+                      <button
+                        key={record.id}
+                        style={{
+                          ...styles.recordButton,
+                          ...(selectedRecordId === record.id ? styles.activeRecordButton : {}),
+                        }}
+                        type="button"
+                        onClick={() => setSelectedRecordId(record.id)}
+                      >
+                        <strong>{record.reasonForVisit}</strong>
+                        <span>{new Date(record.createdAtUtc).toLocaleString()}</span>
+                        <small>{record.currentCondition || record.symptoms || "Sin detalle adicional"}</small>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+
+            {selectedRecord && (
+              <article style={styles.recordDetail}>
+                <div style={styles.detailsHeader}>
+                  <h3 style={styles.subTitle}>Detalle de ficha</h3>
+                  <span style={styles.folderBadge}>
+                    {getRecordFolder(selectedRecord.reasonForVisit)}
+                  </span>
+                </div>
+                <div style={styles.detailGrid}>
+                  <DetailBlock label="Motivo" value={selectedRecord.reasonForVisit} />
+                  <DetailBlock label="Condición actual" value={selectedRecord.currentCondition} />
+                  <DetailBlock label="Síntomas" value={selectedRecord.symptoms} />
+                  <DetailBlock label="Alergias" value={selectedRecord.allergies} />
+                  <DetailBlock label="Antecedentes" value={selectedRecord.medicalHistory} />
+                  <DetailBlock label="Signos vitales" value={selectedRecord.vitalSigns} />
+                  <DetailBlock label="Hoja física" value={selectedRecord.physicalSheetReference} />
+                  <DetailBlock label="Transcripción" value={selectedRecord.physicalSheetTranscript} />
+                  <DetailBlock label="Notas internas" value={selectedRecord.notes} />
+                </div>
               </article>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </section>
 
@@ -607,6 +676,13 @@ export function PatientsPage({ onBack }: PatientsPageProps) {
                   <td style={styles.td}>
                     <div style={styles.actions}>
                       <button
+                        style={styles.viewButton}
+                        onClick={() => handleViewPatientRecords(patient)}
+                      >
+                        Ver ficha
+                      </button>
+
+                      <button
                         style={styles.editButton}
                         onClick={() => handleEditPatient(patient)}
                       >
@@ -633,54 +709,44 @@ export function PatientsPage({ onBack }: PatientsPageProps) {
   );
 }
 
+function getLastName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/);
+  return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "SIN APELLIDO";
+}
+
+function getRecordFolder(reason: string) {
+  const text = reason.toLowerCase();
+
+  if (text.includes("oper") || text.includes("cirug") || text.includes("quir")) {
+    return "Operaciones";
+  }
+
+  if (text.includes("emerg") || text.includes("urgenc") || text.includes("grave")) {
+    return "Emergencia / gravedad";
+  }
+
+  if (text.includes("control") || text.includes("seguimiento") || text.includes("revision")) {
+    return "Controles";
+  }
+
+  if (text.includes("consulta") || text.includes("general")) {
+    return "Consulta general";
+  }
+
+  return "Otros";
+}
+
+function DetailBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={styles.detailBlock}>
+      <span>{label}</span>
+      <p>{value || "Sin registro"}</p>
+    </div>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f6fb",
-    padding: "32px",
-    fontFamily: "Arial, sans-serif",
-  },
-  header: {
-    maxWidth: "1100px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "34px",
-  },
-  subtitle: {
-    margin: "6px 0 0 0",
-    color: "#6b7280",
-  },
-  backButton: {
-    padding: "12px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#111827",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  card: {
-    maxWidth: "1100px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-  },
-  sectionTitle: {
-    marginTop: 0,
-    color: "#111827",
-  },
+  ...pageStyles,
   form: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -693,78 +759,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "16px",
     alignItems: "end",
   },
-  label: {
-    display: "grid",
-    gap: "8px",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "bold",
-  },
-  input: {
-    padding: "12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-  },
-  textarea: {
-    minHeight: "90px",
-    padding: "12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-    resize: "vertical",
-  },
-  saveButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#0f766e",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  cancelButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#6b7280",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  message: {
-    marginTop: "16px",
-    color: "#0f766e",
-    fontWeight: "bold",
-  },
-  searchInput: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "12px",
-    marginBottom: "18px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    textAlign: "left",
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#374151",
-  },
-  td: {
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#111827",
-  },
-  actions: {
-    display: "flex",
-    gap: "8px",
-  },
   recordList: {
     display: "grid",
     gap: "10px",
@@ -774,25 +768,85 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gap: "6px",
     padding: "14px",
-    border: "1px solid #e5e7eb",
+    border: "1px solid #d9e8ee",
     borderRadius: "10px",
-    color: "#111827",
+    color: "#12323f",
     background: "#f8fafc",
   },
-  editButton: {
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#334155",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
+  folderHeader: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "12px",
+    marginTop: "18px",
+    padding: "14px",
+    borderRadius: "10px",
+    background: "#e7f7f4",
+    color: "#0b635d",
   },
-  deleteButton: {
+  folderGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "14px",
+    marginTop: "16px",
+  },
+  folderBox: {
+    padding: "14px",
+    border: "1px solid #dbe4ea",
+    borderRadius: "10px",
+    background: "#ffffff",
+  },
+  folderTitle: {
+    margin: "0 0 10px",
+    color: "#12323f",
+    fontSize: "17px",
+  },
+  recordButton: {
+    display: "grid",
+    gap: "5px",
+    width: "100%",
+    padding: "12px",
+    border: "1px solid #d9e8ee",
+    borderRadius: "8px",
+    background: "#f8fafc",
+    color: "#12323f",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  activeRecordButton: {
+    borderColor: "#0e9384",
+    background: "#e7f7f4",
+  },
+  recordDetail: {
+    marginTop: "18px",
+    padding: "18px",
+    border: "1px solid #0e9384",
+    borderRadius: "10px",
+    background: "#ffffff",
+  },
+  folderBadge: {
+    padding: "7px 10px",
+    borderRadius: "999px",
+    background: "#e7f7f4",
+    color: "#0b635d",
+    fontWeight: "bold",
+  },
+  detailGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "12px",
+    marginTop: "14px",
+  },
+  detailBlock: {
+    padding: "12px",
+    borderRadius: "8px",
+    background: "#f8fafc",
+    color: "#12323f",
+  },
+  viewButton: {
     padding: "8px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#b91c1c",
+    background: "#0e9384",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../api/api";
+import { pageStyles } from "../styles/pageStyles";
 
 type Appointment = {
   id: string;
@@ -302,11 +303,11 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
         <head>
           <title>Receta ClinicaProNV</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 32px; color: #111827; }
+            body { font-family: Arial, sans-serif; padding: 32px; color: #12323f; }
             h1 { margin: 0 0 8px; }
             .meta { display: grid; gap: 6px; margin: 20px 0; }
             pre { white-space: pre-wrap; font-family: Arial, sans-serif; line-height: 1.5; }
-            .notes { margin-top: 20px; padding-top: 14px; border-top: 1px solid #d1d5db; }
+            .notes { margin-top: 20px; padding-top: 14px; border-top: 1px solid #c9dce3; }
           </style>
         </head>
         <body>
@@ -685,66 +686,10 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f6fb",
-    padding: "32px",
-    fontFamily: "Arial, sans-serif",
-  },
-  header: {
-    maxWidth: "1200px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "34px",
-  },
-  subtitle: {
-    margin: "6px 0 0 0",
-    color: "#6b7280",
-  },
-  backButton: {
-    padding: "12px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#111827",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  card: {
-    maxWidth: "1200px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    overflowX: "auto",
-  },
-  sectionTitle: {
-    marginTop: 0,
-    color: "#111827",
-  },
-  subTitle: {
-    margin: 0,
-    color: "#111827",
-  },
+  ...pageStyles,
   form: {
     display: "grid",
     gap: "16px",
-  },
-  detailsHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   prescriptionRow: {
     display: "grid",
@@ -752,111 +697,9 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "12px",
     alignItems: "end",
   },
-  label: {
-    display: "grid",
-    gap: "8px",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "bold",
-  },
-  input: {
-    padding: "12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-    background: "white",
-    color: "#111827",
-  },
-  textarea: {
-    minHeight: "130px",
-    padding: "12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-    background: "white",
-    color: "#111827",
-    resize: "vertical",
-  },
-  actions: {
-    display: "flex",
-    gap: "12px",
-  },
   filters: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "12px",
     marginBottom: "18px",
-  },
-  saveButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#0f766e",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  addButton: {
-    padding: "10px 14px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#334155",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  cancelButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#6b7280",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  message: {
-    marginTop: "16px",
-    color: "#0f766e",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    textAlign: "left",
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#374151",
-  },
-  td: {
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#111827",
-    verticalAlign: "top",
-  },
-  rowActions: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-  editButton: {
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#334155",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  deleteButton: {
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#b91c1c",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-};
+  },};

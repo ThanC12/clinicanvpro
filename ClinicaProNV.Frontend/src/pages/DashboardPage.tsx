@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../api/api";
+import { pageStyles } from "../styles/pageStyles";
 
 type DashboardSales = {
   today: {
@@ -199,29 +200,7 @@ function RankingCard({
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f6fb",
-    padding: "32px",
-    fontFamily: "Arial, sans-serif",
-  },
-  header: {
-    maxWidth: "1200px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "8px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-  },
-  title: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "34px",
-  },
-  subtitle: {
-    margin: "6px 0 0 0",
-    color: "#6b7280",
-  },
+  ...pageStyles,
   kpiGrid: {
     maxWidth: "1200px",
     margin: "0 auto 24px",
@@ -236,7 +215,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "8px",
     background: "white",
     boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    color: "#111827",
+    color: "#12323f",
   },
   cardGrid: {
     maxWidth: "1200px",
@@ -244,17 +223,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: "16px",
-  },
-  card: {
-    padding: "24px",
-    borderRadius: "8px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    color: "#111827",
-  },
-  sectionTitle: {
-    marginTop: 0,
-    color: "#111827",
   },
   barList: {
     display: "grid",
@@ -265,18 +233,18 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "92px 1fr 90px",
     gap: "10px",
     alignItems: "center",
-    color: "#374151",
+    color: "#284653",
   },
   barTrack: {
     height: "12px",
     borderRadius: "999px",
-    background: "#e5e7eb",
+    background: "#d9e8ee",
     overflow: "hidden",
   },
   barFill: {
     height: "100%",
     borderRadius: "999px",
-    background: "#0f766e",
+    background: "#0e9384",
   },
   quickActions: {
     display: "grid",
@@ -286,14 +254,14 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "12px",
     border: "none",
     borderRadius: "8px",
-    background: "#0f766e",
+    background: "#0e9384",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
   },
   helpText: {
     marginTop: "14px",
-    color: "#6b7280",
+    color: "#5f7680",
   },
   rankingList: {
     display: "grid",
@@ -314,8 +282,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: "28px",
     height: "28px",
     borderRadius: "999px",
-    background: "#ecfdf5",
-    color: "#065f46",
+    background: "#e7f7f4",
+    color: "#0b635d",
     fontWeight: "bold",
-  },
-};
+  },};

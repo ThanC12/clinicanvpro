@@ -79,6 +79,9 @@ public class ClinicaProNVDbContext : DbContext
 
         modelBuilder.Entity<PharmacyInvoice>(e =>
         {
+            e.Property(x => x.CustomerName).IsRequired();
+            e.Property(x => x.CustomerIdentification).IsRequired();
+            e.Property(x => x.CustomerPhone).IsRequired();
             e.Property(x => x.DeletedByEmail).IsRequired();
             e.Property(x => x.DeletionReason).IsRequired();
         });

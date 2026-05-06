@@ -19,7 +19,11 @@ public class CreatePharmacyInvoiceUseCase
 
     public async Task ExecuteAsync(CreatePharmacyInvoiceDto dto) // <-- AJUSTA nombre si tu DTO se llama distinto
     {
-        var invoice = new PharmacyInvoice(dto.PatientId);
+        var invoice = new PharmacyInvoice(
+            dto.PatientId,
+            dto.CustomerName,
+            dto.CustomerIdentification,
+            dto.CustomerPhone);
 
         foreach (var item in dto.Items)
         {

@@ -4,7 +4,10 @@ namespace ClinicaProNV.Domain.Pharmacy;
 
 public class PharmacyInvoice : BaseEntity
 {
-    public Guid PatientId { get; private set; }
+    public Guid? PatientId { get; private set; }
+    public string CustomerName { get; private set; } = string.Empty;
+    public string CustomerIdentification { get; private set; } = string.Empty;
+    public string CustomerPhone { get; private set; } = string.Empty;
     public decimal Total { get; private set; }
 
     public bool IsDeleted { get; private set; }
@@ -22,9 +25,21 @@ public class PharmacyInvoice : BaseEntity
 
     protected PharmacyInvoice() { }
 
-    public PharmacyInvoice(Guid patientId)
+    public PharmacyInvoice(
+        Guid? patientId,
+        string customerName,
+        string customerIdentification,
+        string customerPhone = "")
     {
+        if (patientId is null && string.IsNullOrWhiteSpace(customerName))
+        {
+            throw new ArgumentException("El nombre del cliente es obligatorio para ventas externas.", nameof(customerName));
+        }
+
         PatientId = patientId;
+        CustomerName = string.IsNullOrWhiteSpace(customerName) ? string.Empty : customerName.Trim();
+        CustomerIdentification = string.IsNullOrWhiteSpace(customerIdentification) ? string.Empty : customerIdentification.Trim();
+        CustomerPhone = string.IsNullOrWhiteSpace(customerPhone) ? string.Empty : customerPhone.Trim();
         Total = 0;
     }
 

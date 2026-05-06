@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../api/api";
+import { pageStyles } from "../styles/pageStyles";
 
 type Patient = {
   id: string;
@@ -622,50 +623,7 @@ export function BillingPage({ onBack }: BillingPageProps) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f6fb",
-    padding: "32px",
-    fontFamily: "Arial, sans-serif",
-  },
-  header: {
-    maxWidth: "1200px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "34px",
-  },
-  subtitle: {
-    margin: "6px 0 0 0",
-    color: "#6b7280",
-  },
-  backButton: {
-    padding: "12px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#111827",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  card: {
-    maxWidth: "1200px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    overflowX: "auto",
-  },
+  ...pageStyles,
   invoiceDetailCard: {
     maxWidth: "1200px",
     margin: "0 auto 24px auto",
@@ -675,37 +633,9 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
     overflowX: "auto",
   },
-  sectionTitle: {
-    marginTop: 0,
-    color: "#111827",
-  },
-  subTitle: {
-    margin: 0,
-    color: "#111827",
-  },
   form: {
     display: "grid",
     gap: "16px",
-  },
-  label: {
-    display: "grid",
-    gap: "8px",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "bold",
-  },
-  input: {
-    padding: "12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-    background: "white",
-    color: "#111827",
-  },
-  detailsHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   detailRow: {
     display: "grid",
@@ -713,64 +643,14 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "12px",
     alignItems: "end",
   },
-  lineTotalBox: {
-    display: "grid",
-    gap: "6px",
-    padding: "10px 12px",
-    borderRadius: "10px",
-    background: "#f3f4f6",
-    color: "#111827",
-  },
-  smallText: {
-    color: "#6b7280",
-    fontSize: "12px",
-  },
-  totalBox: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "16px",
-    borderRadius: "12px",
-    background: "#ecfdf5",
-    color: "#065f46",
-    fontSize: "18px",
-  },
-  addButton: {
-    padding: "10px 14px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#334155",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
   removeButton: {
     padding: "12px 14px",
     border: "none",
     borderRadius: "10px",
-    background: "#b91c1c",
+    background: "#c2413b",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
-  },
-  saveButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#0f766e",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  message: {
-    marginTop: "16px",
-    color: "#0f766e",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
   },
   catalogBox: {
     display: "grid",
@@ -788,52 +668,18 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #dbe4ea",
     borderRadius: "8px",
     background: "white",
-    color: "#111827",
+    color: "#12323f",
     cursor: "pointer",
     textAlign: "left",
-  },
-  searchInput: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "12px",
-    marginBottom: "18px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-  },
-  th: {
-    textAlign: "left",
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#374151",
-  },
-  td: {
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#111827",
-  },
-  deleteButton: {
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#b91c1c",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
   },
   viewButton: {
     padding: "8px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#0f766e",
+    background: "#0e9384",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
-  },
-  actions: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
   },
   invoiceSummary: {
     display: "grid",
@@ -843,15 +689,14 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "14px",
     borderRadius: "10px",
     background: "#f8fafc",
-    color: "#111827",
+    color: "#12323f",
   },
   whatsAppButton: {
     padding: "10px 14px",
     border: "none",
     borderRadius: "10px",
-    background: "#0f766e",
+    background: "#0e9384",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
-  },
-};
+  },};

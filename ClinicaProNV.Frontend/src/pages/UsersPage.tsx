@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../api/api";
+import { pageStyles } from "../styles/pageStyles";
 
 type User = {
   id: string;
@@ -312,110 +313,21 @@ export function UsersPage({ onBack }: UsersPageProps) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f6fb",
-    padding: "32px",
-    fontFamily: "Arial, sans-serif",
-  },
-  header: {
-    maxWidth: "1200px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "34px",
-  },
-  subtitle: {
-    margin: "6px 0 0 0",
-    color: "#6b7280",
-  },
-  backButton: {
-    padding: "12px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#111827",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  card: {
-    maxWidth: "1200px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    overflowX: "auto",
-  },
-  sectionTitle: {
-    marginTop: 0,
-    color: "#111827",
-  },
-  message: {
-    marginTop: "16px",
-    color: "#0f766e",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
+  ...pageStyles,
   form: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr 1fr auto",
     gap: "16px",
     alignItems: "end",
   },
-  label: {
-    display: "grid",
-    gap: "8px",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "bold",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    textAlign: "left",
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#374151",
-  },
-  td: {
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#111827",
-  },
-  input: {
-    width: "100%",
-    padding: "10px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "14px",
-    background: "white",
-    color: "#111827",
-  },
   assignButton: {
     padding: "9px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#0f766e",
+    background: "#0e9384",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
-  },
-  actions: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
   },
   roleList: {
     display: "flex",
@@ -426,8 +338,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "6px 8px",
     border: "none",
     borderRadius: "999px",
-    background: "#ecfdf5",
-    color: "#065f46",
+    background: "#e7f7f4",
+    color: "#0b635d",
     fontWeight: "bold",
     cursor: "pointer",
   },
@@ -435,7 +347,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "9px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#0f766e",
+    background: "#0e9384",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
@@ -444,9 +356,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "9px 12px",
     border: "none",
     borderRadius: "8px",
-    background: "#b91c1c",
+    background: "#c2413b",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
-  },
-};
+  },};

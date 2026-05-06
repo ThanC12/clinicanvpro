@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../api/api";
+import { pageStyles } from "../styles/pageStyles";
 
 type Patient = {
     id: string;
@@ -559,89 +560,18 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-    page: {
-        minHeight: "100vh",
-        background: "#f3f6fb",
-        padding: "32px",
-        fontFamily: "Arial, sans-serif",
-    },
-    header: {
-        maxWidth: "1100px",
-        margin: "0 auto 24px auto",
-        padding: "24px",
-        borderRadius: "18px",
-        background: "white",
-        boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    title: {
-        margin: 0,
-        color: "#111827",
-        fontSize: "34px",
-    },
-    subtitle: {
-        margin: "6px 0 0 0",
-        color: "#6b7280",
-    },
-    backButton: {
-        padding: "12px 18px",
-        border: "none",
-        borderRadius: "10px",
-        background: "#111827",
-        color: "white",
-        fontWeight: "bold",
-        cursor: "pointer",
-    },
-    card: {
-        maxWidth: "1100px",
-        margin: "0 auto 24px auto",
-        padding: "24px",
-        borderRadius: "18px",
-        background: "white",
-        boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    },
-    sectionTitle: {
-        marginTop: 0,
-        color: "#111827",
-    },
+    ...pageStyles,
     form: {
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
         gap: "16px",
-    },
-    label: {
-        display: "grid",
-        gap: "8px",
-        color: "#374151",
-        fontSize: "14px",
-        fontWeight: "bold",
-    },
-    input: {
-        padding: "12px",
-        border: "1px solid #d1d5db",
-        borderRadius: "10px",
-        fontSize: "15px",
-        background: "white",
-        color: "#111827",
-    },
-    saveButton: {
-        gridColumn: "1 / -1",
-        padding: "13px 18px",
-        border: "none",
-        borderRadius: "10px",
-        background: "#0f766e",
-        color: "white",
-        fontWeight: "bold",
-        cursor: "pointer",
     },
     secondaryActionButton: {
         gridColumn: "1 / -1",
         padding: "13px 18px",
         border: "none",
         borderRadius: "10px",
-        background: "#6b7280",
+        background: "#5f7680",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
@@ -652,33 +582,6 @@ const styles: Record<string, React.CSSProperties> = {
         gap: "12px",
         marginBottom: "18px",
     },
-    message: {
-        marginTop: "16px",
-        color: "#0f766e",
-        fontWeight: "bold",
-        textAlign: "center",
-    },
-    table: {
-        width: "100%",
-        borderCollapse: "collapse",
-    },
-    th: {
-        textAlign: "left",
-        padding: "14px",
-        borderBottom: "1px solid #e5e7eb",
-        color: "#374151",
-    },
-    td: {
-        padding: "14px",
-        borderBottom: "1px solid #e5e7eb",
-        color: "#111827",
-        verticalAlign: "top",
-    },
-    smallText: {
-        fontSize: "12px",
-        color: "#6b7280",
-        marginTop: "4px",
-    },
     statusBadge: {
         display: "inline-block",
         padding: "6px 10px",
@@ -687,18 +590,18 @@ const styles: Record<string, React.CSSProperties> = {
         fontWeight: "bold",
     },
     scheduledBadge: {
-        background: "#ecfdf5",
-        color: "#065f46",
+        background: "#e7f7f4",
+        color: "#0b635d",
     },
     cancelledBadge: {
         background: "#fee2e2",
-        color: "#b91c1c",
+        color: "#c2413b",
     },
     cancelAppointmentButton: {
         padding: "8px 12px",
         border: "none",
         borderRadius: "8px",
-        background: "#b91c1c",
+        background: "#c2413b",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
@@ -707,16 +610,7 @@ const styles: Record<string, React.CSSProperties> = {
         padding: "8px 12px",
         border: "none",
         borderRadius: "8px",
-        background: "#0f766e",
-        color: "white",
-        fontWeight: "bold",
-        cursor: "pointer",
-    },
-    editButton: {
-        padding: "8px 12px",
-        border: "none",
-        borderRadius: "8px",
-        background: "#334155",
+        background: "#0e9384",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
@@ -725,7 +619,7 @@ const styles: Record<string, React.CSSProperties> = {
         padding: "8px 12px",
         border: "none",
         borderRadius: "8px",
-        background: "#0f766e",
+        background: "#0e9384",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
@@ -734,7 +628,7 @@ const styles: Record<string, React.CSSProperties> = {
         padding: "8px 12px",
         border: "none",
         borderRadius: "8px",
-        background: "#0f766e",
+        background: "#0e9384",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
@@ -743,24 +637,18 @@ const styles: Record<string, React.CSSProperties> = {
         padding: "8px 12px",
         border: "none",
         borderRadius: "8px",
-        background: "#334155",
+        background: "#1f5d73",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
-    },
-    actions: {
-        display: "flex",
-        gap: "8px",
-        flexWrap: "wrap",
     },
 
     deleteAppointmentButton: {
         padding: "8px 12px",
         border: "none",
         borderRadius: "8px",
-        background: "#b91c1c",
+        background: "#c2413b",
         color: "white",
         fontWeight: "bold",
         cursor: "pointer",
-    },
-};
+    },};

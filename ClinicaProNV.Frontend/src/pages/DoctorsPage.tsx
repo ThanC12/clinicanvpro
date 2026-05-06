@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../api/api";
+import { pageStyles } from "../styles/pageStyles";
 
 type Doctor = {
   id: string;
@@ -252,139 +253,10 @@ export function DoctorsPage({ onBack }: DoctorsPageProps) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f6fb",
-    padding: "32px",
-    fontFamily: "Arial, sans-serif",
-  },
-  header: {
-    maxWidth: "1100px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "34px",
-  },
-  subtitle: {
-    margin: "6px 0 0 0",
-    color: "#6b7280",
-  },
-  backButton: {
-    padding: "12px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#111827",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  card: {
-    maxWidth: "1100px",
-    margin: "0 auto 24px auto",
-    padding: "24px",
-    borderRadius: "18px",
-    background: "white",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.06)",
-  },
-  sectionTitle: {
-    marginTop: 0,
-    color: "#111827",
-  },
+  ...pageStyles,
   form: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr auto auto",
     gap: "16px",
     alignItems: "end",
-  },
-  label: {
-    display: "grid",
-    gap: "8px",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "bold",
-  },
-  input: {
-    padding: "12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-  },
-  saveButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#0f766e",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  cancelButton: {
-    padding: "13px 18px",
-    border: "none",
-    borderRadius: "10px",
-    background: "#6b7280",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  message: {
-    marginTop: "16px",
-    color: "#0f766e",
-    fontWeight: "bold",
-  },
-  searchInput: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "12px",
-    marginBottom: "18px",
-    border: "1px solid #d1d5db",
-    borderRadius: "10px",
-    fontSize: "15px",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    textAlign: "left",
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#374151",
-  },
-  td: {
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb",
-    color: "#111827",
-  },
-  actions: {
-    display: "flex",
-    gap: "8px",
-  },
-  editButton: {
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#334155",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  deleteButton: {
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#b91c1c",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-};
+  },};
