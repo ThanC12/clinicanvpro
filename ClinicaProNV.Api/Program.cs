@@ -20,6 +20,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<IWhatsAppSender, MetaWhatsAppSender>();
 builder.Services.Configure<WhatsAppOptions>(builder.Configuration.GetSection("WhatsApp"));
@@ -74,12 +76,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidateAudience = true,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
 
             ValidIssuer = jwtSettings.Issuer,
-            ValidAudience = jwtSettings.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSettings.SecretKey)
             ),

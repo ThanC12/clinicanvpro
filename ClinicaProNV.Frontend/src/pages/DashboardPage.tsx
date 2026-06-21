@@ -122,8 +122,6 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
                 </button>
               </div>
               <p style={styles.helpText}>
-                La facturación clínica vive en Facturación. La farmacia guarda sus ventas aparte.
-                Las fichas técnicas están en Pacientes, dentro de “Ficha clínica / técnica”.
               </p>
             </article>
           </section>

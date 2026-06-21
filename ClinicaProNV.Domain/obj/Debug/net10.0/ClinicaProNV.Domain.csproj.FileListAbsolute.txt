@@ -10,3 +10,6 @@ C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\Clinic
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\refint\ClinicaProNV.Domain.dll
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\ClinicaProNV.Domain.pdb
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Domain\obj\Debug\net10.0\ref\ClinicaProNV.Domain.dll
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Domain.deps.json
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Domain.dll
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Domain.pdb

@@ -14,3 +14,6 @@ C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Application\obj\Debug\net10.0\C
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Application\obj\Debug\net10.0\refint\ClinicaProNV.Application.dll
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Application\obj\Debug\net10.0\ClinicaProNV.Application.pdb
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Application\obj\Debug\net10.0\ref\ClinicaProNV.Application.dll
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Application.deps.json
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Application.dll
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Application.pdb

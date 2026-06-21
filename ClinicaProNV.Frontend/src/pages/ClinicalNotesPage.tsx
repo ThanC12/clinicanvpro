@@ -301,7 +301,7 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
     printable.document.write(`
       <html>
         <head>
-          <title>Receta ClinicaProNV</title>
+          <title>Receta CLININOVA</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 32px; color: #12323f; }
             h1 { margin: 0 0 8px; }
@@ -311,7 +311,7 @@ export function ClinicalNotesPage({ onBack }: ClinicalNotesPageProps) {
           </style>
         </head>
         <body>
-          <h1>ClinicaProNV</h1>
+          <h1>CLININOVA</h1>
           <h2>Receta médica</h2>
           <div class="meta">
             <span><strong>Paciente:</strong> ${prescription.patientName ?? "Paciente"}</span>

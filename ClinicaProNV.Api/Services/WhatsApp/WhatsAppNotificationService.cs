@@ -158,4 +158,36 @@ public sealed class WhatsAppNotificationService
             _logger.LogWarning(ex, "No se pudo enviar WhatsApp de factura farmacia {InvoiceId}.", invoiceId);
         }
     }
+
+    public async Task<bool> NotifyTemporaryPasswordAsync(
+        string phoneNumber,
+        string email,
+        string temporaryPassword,
+        DateTime expiresAtUtc,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+            {
+                return false;
+            }
+
+            return await _sender.SendTemplateAsync(
+                phoneNumber,
+                _options.Templates.TemporaryPassword,
+                new[]
+                {
+                    email,
+                    temporaryPassword,
+                    expiresAtUtc.ToLocalTime().ToString("HH:mm")
+                },
+                ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No se pudo enviar WhatsApp de contraseña temporal a {Email}.", email);
+            return false;
+        }
+    }
 }

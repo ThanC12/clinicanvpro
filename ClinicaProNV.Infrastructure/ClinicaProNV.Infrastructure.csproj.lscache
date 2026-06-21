@@ -61,6 +61,12 @@ Migrations/
  20260121223059_InitAuth.Designer.cs
  20260122225954_AddCreatedAtUtc.cs
  20260122225954_AddCreatedAtUtc.Designer.cs
+ 20260505031057_AddPatientContactPrescriptionsAndRecords.cs
+ 20260505031057_AddPatientContactPrescriptionsAndRecords.Designer.cs
+ 20260505041152_AddInvoiceDeletionAudit.cs
+ 20260505041152_AddInvoiceDeletionAudit.Designer.cs
+ 20260506035024_AddPharmacyWalkInCustomer.cs
+ 20260506035024_AddPharmacyWalkInCustomer.Designer.cs
  ClinicaProNVDbContextModelSnapshot.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
@@ -94,7 +100,7 @@ Seed/AuthSeeder.cs
 ../
  ClinicaProNV.Application/obj/Debug/net10.0/ref/ClinicaProNV.Application.dll
  ClinicaProNV.Domain/obj/Debug/net10.0/ref/ClinicaProNV.Domain.dll
-<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.7/ref/net10.0/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.8/ref/net10.0/
  Microsoft.CSharp.dll
  Microsoft.VisualBasic.Core.dll
  Microsoft.VisualBasic.dll
@@ -268,7 +274,6 @@ Seed/AuthSeeder.cs
  fluentvalidation/12.1.1/lib/net8.0/FluentValidation.dll
  humanizer.core/2.14.1/lib/net6.0/Humanizer.dll
  microsoft.bcl.asyncinterfaces/6.0.0/lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll
- microsoft.bcl.timeprovider/8.0.1/lib/net8.0/Microsoft.Bcl.TimeProvider.dll
  microsoft.codeanalysis.common/4.5.0/lib/netcoreapp3.1/Microsoft.CodeAnalysis.dll
  microsoft.codeanalysis.csharp.workspaces/4.5.0/lib/netcoreapp3.1/Microsoft.CodeAnalysis.CSharp.Workspaces.dll
  microsoft.codeanalysis.csharp/4.5.0/lib/netcoreapp3.1/Microsoft.CodeAnalysis.CSharp.dll
@@ -291,7 +296,7 @@ Seed/AuthSeeder.cs
  microsoft.extensions.options/10.0.4/lib/net10.0/Microsoft.Extensions.Options.dll
  microsoft.extensions.primitives/10.0.4/lib/net10.0/Microsoft.Extensions.Primitives.dll
  microsoft.identitymodel.abstractions/8.15.0/lib/net10.0/Microsoft.IdentityModel.Abstractions.dll
- microsoft.identitymodel.jsonwebtokens/8.1.0/lib/net9.0/Microsoft.IdentityModel.JsonWebTokens.dll
+ microsoft.identitymodel.jsonwebtokens/8.15.0/lib/net10.0/Microsoft.IdentityModel.JsonWebTokens.dll
  microsoft.identitymodel.logging/8.15.0/lib/net10.0/Microsoft.IdentityModel.Logging.dll
  microsoft.identitymodel.tokens/8.15.0/lib/net10.0/Microsoft.IdentityModel.Tokens.dll
  mono.texttemplating/2.2.1/lib/netstandard2.0/Mono.TextTemplating.dll
@@ -303,17 +308,17 @@ Seed/AuthSeeder.cs
  system.composition.hosting/6.0.0/lib/net6.0/System.Composition.Hosting.dll
  system.composition.runtime/6.0.0/lib/net6.0/System.Composition.Runtime.dll
  system.composition.typedparts/6.0.0/lib/net6.0/System.Composition.TypedParts.dll
- system.identitymodel.tokens.jwt/8.1.0/lib/net9.0/System.IdentityModel.Tokens.Jwt.dll
+ system.identitymodel.tokens.jwt/8.15.0/lib/net10.0/System.IdentityModel.Tokens.Jwt.dll
 
 [analyzerReferences]
-<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.7/analyzers/dotnet/cs/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.8/analyzers/dotnet/cs/
  Microsoft.Interop.ComInterfaceGenerator.dll
  Microsoft.Interop.JavaScript.JSImportGenerator.dll
  Microsoft.Interop.LibraryImportGenerator.dll
  Microsoft.Interop.SourceGeneration.dll
  System.Text.Json.SourceGeneration.dll
  System.Text.RegularExpressions.Generator.dll
-<DOTNET>/sdk/10.0.107/Sdks/Microsoft.NET.Sdk/analyzers/
+<DOTNET>/sdk/10.0.108/Sdks/Microsoft.NET.Sdk/analyzers/
  Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
  Microsoft.CodeAnalysis.NetAnalyzers.dll
 <NUGET>/microsoft.codeanalysis.analyzers/3.3.3/analyzers/dotnet/cs/
@@ -325,5 +330,5 @@ Seed/AuthSeeder.cs
  microsoft.extensions.options/10.0.4/analyzers/dotnet/roslyn4.4/cs/Microsoft.Extensions.Options.SourceGeneration.dll
 
 [analyzerConfigFiles]
-<DOTNET>/sdk/10.0.107/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
+<DOTNET>/sdk/10.0.108/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
 obj/Debug/net10.0/ClinicaProNV.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig

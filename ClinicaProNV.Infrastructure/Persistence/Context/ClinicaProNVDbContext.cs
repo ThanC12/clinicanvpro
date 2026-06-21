@@ -48,6 +48,7 @@ public class ClinicaProNVDbContext : DbContext
             e.HasIndex(x => x.Email).IsUnique();
             e.Property(x => x.Email).IsRequired();
             e.Property(x => x.PasswordHash).IsRequired();
+            e.Property(x => x.PhoneNumber).HasMaxLength(32);
         });
 
         // ROLE

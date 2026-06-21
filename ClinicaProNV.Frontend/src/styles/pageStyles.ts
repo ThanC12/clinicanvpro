@@ -4,7 +4,7 @@ export const pageStyles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
     background: "#f4f9fb",
-    padding: "32px",
+    padding: "28px",
     fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
   },
   header: {
@@ -57,6 +57,7 @@ export const pageStyles: Record<string, CSSProperties> = {
   sectionTitle: {
     marginTop: 0,
     color: "#12323f",
+    letterSpacing: "0",
   },
   subTitle: {
     margin: 0,
@@ -151,12 +152,16 @@ export const pageStyles: Record<string, CSSProperties> = {
   table: {
     width: "100%",
     borderCollapse: "collapse",
+    border: "1px solid #d9e8ee",
+    borderRadius: "10px",
+    overflow: "hidden",
   },
   th: {
     textAlign: "left",
     padding: "14px",
     borderBottom: "1px solid #d9e8ee",
     color: "#284653",
+    background: "#f4f9fb",
   },
   td: {
     padding: "14px",

@@ -20,7 +20,7 @@ public sealed class MetaWhatsAppSender : IWhatsAppSender
         _logger = logger;
     }
 
-    public async Task SendTemplateAsync(
+    public async Task<bool> SendTemplateAsync(
         string to,
         string templateName,
         IReadOnlyList<string> bodyParameters,
@@ -29,7 +29,7 @@ public sealed class MetaWhatsAppSender : IWhatsAppSender
         if (!_options.Enabled)
         {
             _logger.LogInformation("WhatsApp desactivado. Plantilla {Template} no enviada.", templateName);
-            return;
+            return false;
         }
 
         var phone = NormalizePhone(to);
@@ -37,14 +37,14 @@ public sealed class MetaWhatsAppSender : IWhatsAppSender
         if (string.IsNullOrWhiteSpace(phone))
         {
             _logger.LogWarning("WhatsApp no enviado: número vacío.");
-            return;
+            return false;
         }
 
         if (string.IsNullOrWhiteSpace(_options.PhoneNumberId) ||
             string.IsNullOrWhiteSpace(_options.AccessToken))
         {
             _logger.LogWarning("WhatsApp no enviado: falta PhoneNumberId o AccessToken.");
-            return;
+            return false;
         }
 
         var payload = new
@@ -92,10 +92,11 @@ public sealed class MetaWhatsAppSender : IWhatsAppSender
                 "WhatsApp falló con status {StatusCode}: {Response}",
                 response.StatusCode,
                 responseText);
-            return;
+            return false;
         }
 
         _logger.LogInformation("WhatsApp enviado con plantilla {Template} a {Phone}.", templateName, phone);
+        return true;
     }
 
     private static string NormalizePhone(string value)

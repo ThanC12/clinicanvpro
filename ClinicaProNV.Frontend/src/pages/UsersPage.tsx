@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { apiRequest } from "../api/api";
 import { pageStyles } from "../styles/pageStyles";
 
 type User = {
   id: string;
   email: string;
+  phoneNumber: string;
+  hasTemporaryPassword: boolean;
+  temporaryPasswordExpiresAtUtc?: string | null;
   isActive: boolean;
   createdAtUtc: string;
   roles: string[];
@@ -15,21 +18,43 @@ type Role = {
   name: string;
 };
 
+type CreateUserResponse = User & {
+  temporaryPassword?: string;
+  whatsAppSent?: boolean;
+};
+
+type TemporaryPasswordResponse = User & {
+  temporaryPassword?: string;
+  whatsAppSent?: boolean;
+};
+
 type UsersPageProps = {
   onBack: () => void;
 };
+
+const allowedRoleNames = ["Admin", "Recepcion", "Doctor", "Enfermeria", "Farmacia", "Cajero"];
 
 export function UsersPage({ onBack }: UsersPageProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<Record<string, string>>({});
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editPhoneNumber, setEditPhoneNumber] = useState("");
+  const [editRoles, setEditRoles] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  const [newPhoneNumber, setNewPhoneNumber] = useState("");
   const [newRole, setNewRole] = useState("Recepcion");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  function normalizeUser(user: User): User {
+    return {
+      ...user,
+      roles: [...new Set(user.roles.filter((role) => allowedRoleNames.includes(role)))],
+    };
+  }
 
   async function loadData() {
     try {
@@ -39,8 +64,14 @@ export function UsersPage({ onBack }: UsersPageProps) {
       const usersData = await apiRequest<User[]>("/admin/users");
       const rolesData = await apiRequest<Role[]>("/admin/roles");
 
-      setUsers(usersData);
-      setRoles(rolesData);
+      setUsers(usersData.map(normalizeUser));
+      setRoles(
+        rolesData.filter(
+          (role, index, current) =>
+            allowedRoleNames.includes(role.name) &&
+            current.findIndex((item) => item.name === role.name) === index
+        )
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al cargar usuarios y roles");
     } finally {
@@ -80,6 +111,62 @@ export function UsersPage({ onBack }: UsersPageProps) {
     }
   }
 
+  function handleStartEdit(user: User) {
+    setEditingUserId(user.id);
+    setEditPhoneNumber(user.phoneNumber ?? "");
+    setEditRoles(user.roles);
+    setMessage("");
+  }
+
+  function handleCancelEdit() {
+    setEditingUserId(null);
+    setEditPhoneNumber("");
+    setEditRoles([]);
+  }
+
+  function handleEditRoleToggle(roleName: string) {
+    setEditRoles((current) =>
+      current.includes(roleName)
+        ? current.filter((role) => role !== roleName)
+        : [...current, roleName]
+    );
+  }
+
+  async function handleSaveUser(userId: string) {
+    if (!editPhoneNumber.trim()) {
+      setMessage("Ingrese el teléfono/WhatsApp del usuario.");
+      return;
+    }
+
+    if (editRoles.length === 0) {
+      setMessage("Seleccione al menos un rol para el usuario.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setMessage("Guardando cambios...");
+
+      const updated = await apiRequest<User>(`/admin/users/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          phoneNumber: editPhoneNumber,
+          roles: editRoles,
+        }),
+      });
+
+      setUsers((current) =>
+        current.map((user) => (user.id === userId ? normalizeUser(updated) : user))
+      );
+      handleCancelEdit();
+      setMessage("Usuario actualizado correctamente.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al actualizar usuario");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleCreateUser(event: React.FormEvent) {
     event.preventDefault();
 
@@ -88,8 +175,8 @@ export function UsersPage({ onBack }: UsersPageProps) {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setMessage("La contraseña debe tener al menos 6 caracteres.");
+    if (!newPhoneNumber.trim()) {
+      setMessage("Ingrese el teléfono/WhatsApp del usuario.");
       return;
     }
 
@@ -97,19 +184,25 @@ export function UsersPage({ onBack }: UsersPageProps) {
       setSaving(true);
       setMessage("Creando usuario...");
 
-      await apiRequest<void>("/admin/users", {
+      const created = await apiRequest<CreateUserResponse>("/admin/users", {
         method: "POST",
         body: JSON.stringify({
           email: newEmail,
-          password: newPassword,
+          phoneNumber: newPhoneNumber,
           role: newRole,
         }),
       });
 
       setNewEmail("");
-      setNewPassword("");
+      setNewPhoneNumber("");
       setNewRole("Recepcion");
-      setMessage("Usuario creado correctamente.");
+      setMessage(
+        created.whatsAppSent
+          ? "Usuario creado. La contraseña temporal fue enviada al WhatsApp y vence en 5 minutos."
+          : created.temporaryPassword
+          ? `Usuario creado. Contraseña temporal: ${created.temporaryPassword}. Vence en 5 minutos.`
+          : "Usuario creado, pero no se confirmó el envío por WhatsApp. Revise la configuración de WhatsApp."
+      );
       await loadData();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al crear usuario");
@@ -131,6 +224,42 @@ export function UsersPage({ onBack }: UsersPageProps) {
       await loadData();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error al cambiar estado");
+    }
+  }
+
+  async function handleGenerateTemporaryPassword(user: User) {
+    const confirmed = window.confirm(
+      `¿Generar una nueva contraseña temporal para ${user.email}? La contraseña anterior dejará de funcionar.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setMessage("Generando y enviando contraseña temporal...");
+
+      const updated = await apiRequest<TemporaryPasswordResponse>(
+        `/admin/users/${user.id}/temporary-password`,
+        { method: "POST" }
+      );
+
+      setUsers((current) =>
+        current.map((item) => (item.id === user.id ? normalizeUser(updated) : item))
+      );
+
+      setMessage(
+        updated.whatsAppSent
+          ? "Contraseña temporal enviada al WhatsApp. Vence en 5 minutos."
+          : updated.temporaryPassword
+          ? `No se pudo confirmar WhatsApp. Contraseña temporal: ${updated.temporaryPassword}. Vence en 5 minutos.`
+          : "No se pudo confirmar el envío por WhatsApp. Revise la configuración."
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al generar contraseña temporal");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -174,7 +303,7 @@ export function UsersPage({ onBack }: UsersPageProps) {
       </section>
 
       <section style={styles.card}>
-        <h2 style={styles.sectionTitle}>Crear usuario</h2>
+        <h2 style={styles.sectionTitle}>Crear usuario con contraseña temporal</h2>
 
         <form style={styles.form} onSubmit={handleCreateUser}>
           <label style={styles.label}>
@@ -189,13 +318,12 @@ export function UsersPage({ onBack }: UsersPageProps) {
           </label>
 
           <label style={styles.label}>
-            Contraseña
+            WhatsApp
             <input
               style={styles.input}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              type="password"
-              placeholder="Mínimo 6 caracteres"
+              value={newPhoneNumber}
+              onChange={(e) => setNewPhoneNumber(e.target.value)}
+              placeholder="Ej: 593991234567"
             />
           </label>
 
@@ -215,7 +343,7 @@ export function UsersPage({ onBack }: UsersPageProps) {
           </label>
 
           <button style={styles.assignButton} type="submit" disabled={saving}>
-            {saving ? "Creando..." : "Crear usuario"}
+            {saving ? "Enviando..." : "Crear y enviar clave"}
           </button>
         </form>
       </section>
@@ -234,7 +362,9 @@ export function UsersPage({ onBack }: UsersPageProps) {
             <thead>
               <tr>
                 <th style={styles.th}>Correo</th>
+                <th style={styles.th}>WhatsApp</th>
                 <th style={styles.th}>Estado</th>
+                <th style={styles.th}>Clave temporal</th>
                 <th style={styles.th}>Roles actuales</th>
                 <th style={styles.th}>Fecha registro</th>
                 <th style={styles.th}>Rol a asignar</th>
@@ -244,65 +374,139 @@ export function UsersPage({ onBack }: UsersPageProps) {
 
             <tbody>
               {users.map((user) => (
-                <tr key={user.id}>
-                  <td style={styles.td}>{user.email}</td>
+                <Fragment key={user.id}>
+                  <tr>
+                    <td style={styles.td}>{user.email}</td>
 
-                  <td style={styles.td}>{user.isActive ? "Activo" : "Inactivo"}</td>
+                    <td style={styles.td}>{user.phoneNumber || "Sin WhatsApp"}</td>
 
-                  <td style={styles.td}>
-                    <div style={styles.roleList}>
-                      {user.roles.length === 0 && <span>Sin roles</span>}
-                      {user.roles.map((roleName) => (
+                    <td style={styles.td}>{user.isActive ? "Activo" : "Inactivo"}</td>
+
+                    <td style={styles.td}>
+                      {user.hasTemporaryPassword
+                        ? `Vence ${user.temporaryPasswordExpiresAtUtc ? new Date(user.temporaryPasswordExpiresAtUtc).toLocaleTimeString() : ""}`
+                        : "Definitiva"}
+                    </td>
+
+                    <td style={styles.td}>
+                      <div style={styles.roleList}>
+                        {user.roles.length === 0 && <span>Sin roles</span>}
+                        {user.roles.map((roleName) => (
+                          <button
+                            key={roleName}
+                            style={styles.roleBadge}
+                            onClick={() => handleRemoveRole(user.id, roleName)}
+                            title="Quitar rol"
+                          >
+                            {roleName} ×
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+
+                    <td style={styles.td}>
+                      {new Date(user.createdAtUtc).toLocaleString()}
+                    </td>
+
+                    <td style={styles.td}>
+                      <select
+                        style={styles.input}
+                        value={selectedRoles[user.id] ?? ""}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                      >
+                        <option value="">Seleccione rol</option>
+
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.name}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+
+                    <td style={styles.td}>
+                      <div style={styles.actions}>
                         <button
-                          key={roleName}
-                          style={styles.roleBadge}
-                          onClick={() => handleRemoveRole(user.id, roleName)}
-                          title="Quitar rol"
+                          style={styles.assignButton}
+                          onClick={() => handleAssignRole(user.id)}
                         >
-                          {roleName} ×
+                          Asignar rol
                         </button>
-                      ))}
-                    </div>
-                  </td>
 
-                  <td style={styles.td}>
-                    {new Date(user.createdAtUtc).toLocaleString()}
-                  </td>
+                        <button
+                          style={styles.editButton}
+                          onClick={() => handleStartEdit(user)}
+                        >
+                          Editar
+                        </button>
 
-                  <td style={styles.td}>
-                    <select
-                      style={styles.input}
-                      value={selectedRoles[user.id] ?? ""}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                    >
-                      <option value="">Seleccione rol</option>
+                        <button
+                          style={styles.resetButton}
+                          onClick={() => handleGenerateTemporaryPassword(user)}
+                          disabled={saving}
+                        >
+                          Enviar clave
+                        </button>
 
-                      {roles.map((role) => (
-                        <option key={role.id} value={role.name}>
-                          {role.name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
+                        <button
+                          style={user.isActive ? styles.deactivateButton : styles.activateButton}
+                          onClick={() => handleToggleUser(user)}
+                        >
+                          {user.isActive ? "Desactivar" : "Activar"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
 
-                  <td style={styles.td}>
-                    <div style={styles.actions}>
-                      <button
-                        style={styles.assignButton}
-                        onClick={() => handleAssignRole(user.id)}
-                      >
-                        Asignar rol
-                      </button>
+                  {editingUserId === user.id && (
+                    <tr>
+                      <td style={styles.editTd} colSpan={8}>
+                        <div style={styles.editPanel}>
+                          <label style={styles.label}>
+                            WhatsApp
+                            <input
+                              style={styles.input}
+                              value={editPhoneNumber}
+                              onChange={(e) => setEditPhoneNumber(e.target.value)}
+                              placeholder="Ej: 593991234567"
+                            />
+                          </label>
 
-                      <button
-                        style={user.isActive ? styles.deactivateButton : styles.activateButton}
-                        onClick={() => handleToggleUser(user)}
-                      >
-                        {user.isActive ? "Desactivar" : "Activar"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                          <div style={styles.editRoles}>
+                            {roles.map((role) => (
+                              <label key={role.id} style={styles.checkLabel}>
+                                <input
+                                  type="checkbox"
+                                  checked={editRoles.includes(role.name)}
+                                  onChange={() => handleEditRoleToggle(role.name)}
+                                />
+                                {role.name}
+                              </label>
+                            ))}
+                          </div>
+
+                          <div style={styles.actions}>
+                            <button
+                              style={styles.assignButton}
+                              onClick={() => handleSaveUser(user.id)}
+                              disabled={saving}
+                            >
+                              {saving ? "Guardando..." : "Guardar"}
+                            </button>
+
+                            <button
+                              style={styles.secondaryButton}
+                              onClick={handleCancelEdit}
+                              disabled={saving}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -360,4 +564,55 @@ const styles: Record<string, React.CSSProperties> = {
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
-  },};
+  },
+  secondaryButton: {
+    padding: "9px 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "#61757d",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+  resetButton: {
+    padding: "9px 12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "#0d6eb8",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+  editTd: {
+    padding: "0 14px 14px 14px",
+    borderBottom: "1px solid #d9e8ee",
+    background: "#f8fbfc",
+  },
+  editPanel: {
+    display: "grid",
+    gridTemplateColumns: "minmax(220px, 1fr) 2fr auto",
+    gap: "16px",
+    alignItems: "end",
+    padding: "16px",
+    border: "1px solid #d9e8ee",
+    borderRadius: "10px",
+    background: "#ffffff",
+  },
+  editRoles: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
+  checkLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "8px 10px",
+    border: "1px solid #c9dce3",
+    borderRadius: "8px",
+    background: "#f4f9fb",
+    color: "#12323f",
+    fontWeight: 700,
+  },
+};

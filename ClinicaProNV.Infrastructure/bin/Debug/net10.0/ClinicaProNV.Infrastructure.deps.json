@@ -17,7 +17,7 @@
           "Microsoft.Extensions.Options.ConfigurationExtensions": "10.0.0",
           "Microsoft.IdentityModel.Tokens": "8.15.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.1",
-          "System.IdentityModel.Tokens.Jwt": "8.1.0"
+          "System.IdentityModel.Tokens.Jwt": "8.15.0"
         },
         "runtime": {
           "ClinicaProNV.Infrastructure.dll": {}
@@ -64,14 +64,6 @@
           "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
             "assemblyVersion": "6.0.0.0",
             "fileVersion": "6.0.21.52210"
-          }
-        }
-      },
-      "Microsoft.Bcl.TimeProvider/8.0.1": {
-        "runtime": {
-          "lib/net8.0/Microsoft.Bcl.TimeProvider.dll": {
-            "assemblyVersion": "8.0.0.1",
-            "fileVersion": "8.0.123.58001"
           }
         }
       },
@@ -496,15 +488,14 @@
           }
         }
       },
-      "Microsoft.IdentityModel.JsonWebTokens/8.1.0": {
+      "Microsoft.IdentityModel.JsonWebTokens/8.15.0": {
         "dependencies": {
-          "Microsoft.Bcl.TimeProvider": "8.0.1",
           "Microsoft.IdentityModel.Tokens": "8.15.0"
         },
         "runtime": {
-          "lib/net9.0/Microsoft.IdentityModel.JsonWebTokens.dll": {
-            "assemblyVersion": "8.1.0.0",
-            "fileVersion": "8.1.0.50924"
+          "lib/net10.0/Microsoft.IdentityModel.JsonWebTokens.dll": {
+            "assemblyVersion": "8.15.0.0",
+            "fileVersion": "8.15.0.61118"
           }
         }
       },
@@ -634,15 +625,15 @@
           }
         }
       },
-      "System.IdentityModel.Tokens.Jwt/8.1.0": {
+      "System.IdentityModel.Tokens.Jwt/8.15.0": {
         "dependencies": {
-          "Microsoft.IdentityModel.JsonWebTokens": "8.1.0",
+          "Microsoft.IdentityModel.JsonWebTokens": "8.15.0",
           "Microsoft.IdentityModel.Tokens": "8.15.0"
         },
         "runtime": {
-          "lib/net9.0/System.IdentityModel.Tokens.Jwt.dll": {
-            "assemblyVersion": "8.1.0.0",
-            "fileVersion": "8.1.0.50924"
+          "lib/net10.0/System.IdentityModel.Tokens.Jwt.dll": {
+            "assemblyVersion": "8.15.0.0",
+            "fileVersion": "8.15.0.61118"
           }
         }
       },
@@ -709,13 +700,6 @@
       "sha512": "sha512-UcSjPsst+DfAdJGVDsu346FX0ci0ah+lw3WRtn18NUwEqRt70HaOQ7lI72vy3+1LxtqI3T5GWwV39rQSrCzAeg==",
       "path": "microsoft.bcl.asyncinterfaces/6.0.0",
       "hashPath": "microsoft.bcl.asyncinterfaces.6.0.0.nupkg.sha512"
-    },
-    "Microsoft.Bcl.TimeProvider/8.0.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-C7kWHJnMRY7EvJev2S8+yJHZ1y7A4ZlLbA4NE+O23BDIAN5mHeqND1m+SKv1ChRS5YlCDW7yAMUe7lttRsJaAA==",
-      "path": "microsoft.bcl.timeprovider/8.0.1",
-      "hashPath": "microsoft.bcl.timeprovider.8.0.1.nupkg.sha512"
     },
     "Microsoft.CodeAnalysis.Common/4.5.0": {
       "type": "package",
@@ -878,12 +862,12 @@
       "path": "microsoft.identitymodel.abstractions/8.15.0",
       "hashPath": "microsoft.identitymodel.abstractions.8.15.0.nupkg.sha512"
     },
-    "Microsoft.IdentityModel.JsonWebTokens/8.1.0": {
+    "Microsoft.IdentityModel.JsonWebTokens/8.15.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-p77XmuOb6Vt9Zi0jowBK5zk8YoIQs8kK2CSKaV0ofkNLKSraKXlndJ9gBT0ojP7BOQP7vAWTgVVgB8Kg5pmXpg==",
-      "path": "microsoft.identitymodel.jsonwebtokens/8.1.0",
-      "hashPath": "microsoft.identitymodel.jsonwebtokens.8.1.0.nupkg.sha512"
+      "sha512": "sha512-3513f5VzvOZy3ELd42wGnh1Q3e83tlGAuXFSNbENpgWYoAhLLzgFtd5PiaOPGAU0gqKhYGVzKavghLUGfX3HQg==",
+      "path": "microsoft.identitymodel.jsonwebtokens/8.15.0",
+      "hashPath": "microsoft.identitymodel.jsonwebtokens.8.15.0.nupkg.sha512"
     },
     "Microsoft.IdentityModel.Logging/8.15.0": {
       "type": "package",
@@ -969,12 +953,12 @@
       "path": "system.composition.typedparts/6.0.0",
       "hashPath": "system.composition.typedparts.6.0.0.nupkg.sha512"
     },
-    "System.IdentityModel.Tokens.Jwt/8.1.0": {
+    "System.IdentityModel.Tokens.Jwt/8.15.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-2Na5IOk7Tr7gmBDyPOSpFPi8DXVHfJofbmp6A0L3NSuJz6n3n5kx3CgBD1WRvSaSLu0QHjvrzv6rpghiqmFgSg==",
-      "path": "system.identitymodel.tokens.jwt/8.1.0",
-      "hashPath": "system.identitymodel.tokens.jwt.8.1.0.nupkg.sha512"
+      "sha512": "sha512-dpodi7ixz6hxK8YCBYAWzm0IA8JYXoKcz0hbCbNifo519//rjUI0fBD8rfNr+IGqq+2gm4oQoXwHk09LX5SqqQ==",
+      "path": "system.identitymodel.tokens.jwt/8.15.0",
+      "hashPath": "system.identitymodel.tokens.jwt.8.15.0.nupkg.sha512"
     },
     "ClinicaProNV.Application/1.0.0": {
       "type": "project",

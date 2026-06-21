@@ -1430,7 +1430,7 @@
           "Microsoft.EntityFrameworkCore.Tools": "8.0.4",
           "Microsoft.IdentityModel.Tokens": "8.15.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.1",
-          "System.IdentityModel.Tokens.Jwt": "8.1.0"
+          "System.IdentityModel.Tokens.Jwt": "8.15.0"
         },
         "compile": {
           "bin/placeholder/ClinicaProNV.Infrastructure.dll": {}
@@ -4013,7 +4013,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.107/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.108/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

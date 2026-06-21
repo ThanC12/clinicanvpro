@@ -15,6 +15,8 @@ type AuthResponse = {
   email: string;
   role: string;
   token: string;
+  mustChangePassword: boolean;
+  temporaryPasswordExpiresAtUtc?: string | null;
 };
 
 type AuthState = {
@@ -28,6 +30,7 @@ type ModuleDefinition = {
   title: string;
   description: string;
   roles: string[];
+  icon: string;
 };
 
 const modules: ModuleDefinition[] = [
@@ -36,48 +39,79 @@ const modules: ModuleDefinition[] = [
     title: "Dashboard",
     description: "Ventas del día, rankings y accesos rápidos.",
     roles: ["Admin", "Cajero", "Farmacia"],
+    icon: "▦",
   },
   {
     path: "/pacientes",
     title: "Pacientes",
     description: "Datos personales, búsqueda y expediente.",
     roles: ["Admin", "Recepcion", "Doctor", "Enfermeria"],
+    icon: "+",
   },
   {
     path: "/doctores",
     title: "Doctores",
     description: "Médicos, especialidades y disponibilidad base.",
     roles: ["Admin", "Recepcion"],
+    icon: "DR",
   },
   {
     path: "/citas",
     title: "Citas",
     description: "Agenda, estados y cambios de horario.",
     roles: ["Admin", "Recepcion", "Doctor", "Enfermeria"],
+    icon: "□",
   },
   {
     path: "/historias-clinicas",
     title: "Historias clínicas",
     description: "Notas de consulta e historial por paciente.",
     roles: ["Admin", "Doctor", "Enfermeria"],
+    icon: "HC",
   },
   {
     path: "/farmacia",
     title: "Farmacia",
     description: "Inventario, stock y venta de medicamentos.",
     roles: ["Admin", "Farmacia"],
+    icon: "Rx",
   },
   {
     path: "/facturacion",
     title: "Facturación",
     description: "Facturas clínicas, detalle e impresión.",
     roles: ["Admin", "Cajero"],
+    icon: "$",
   },
   {
     path: "/usuarios",
     title: "Usuarios",
     description: "Altas, roles y estado de acceso.",
     roles: ["Admin"],
+    icon: "U",
+  },
+];
+
+const authAccessItems = [
+  {
+    label: "Pacientes",
+    description: "Recepción, médico o enfermería",
+    roles: ["Admin", "Recepcion", "Doctor", "Enfermeria"],
+  },
+  {
+    label: "Farmacia",
+    description: "Inventario y ventas",
+    roles: ["Admin", "Farmacia"],
+  },
+  {
+    label: "Reportes",
+    description: "Indicadores y control",
+    roles: ["Admin", "Cajero", "Farmacia"],
+  },
+  {
+    label: "Caja",
+    description: "Cobros y facturación",
+    roles: ["Admin", "Cajero"],
   },
 ];
 
@@ -92,10 +126,14 @@ function getStoredAuth(): AuthState | null {
 function App() {
   const [auth, setAuth] = useState<AuthState | null>(() => getStoredAuth());
   const [route, setRoute] = useState(() => window.location.pathname);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [authMode, setAuthMode] = useState<"login" | "forceChange">("login");
+  const [pendingAuth, setPendingAuth] = useState<AuthResponse | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Recepcion");
+  const [currentTemporaryPassword, setCurrentTemporaryPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [selectedAccess, setSelectedAccess] = useState(authAccessItems[0]);
   const [message, setMessage] = useState("");
 
   const allowedModules = useMemo(() => {
@@ -139,26 +177,76 @@ function App() {
 
   async function handleAuth(event: React.FormEvent) {
     event.preventDefault();
-    setMessage(authMode === "login" ? "Iniciando sesión..." : "Creando cuenta...");
+    setMessage("Iniciando sesión...");
 
     try {
-      const data = await apiRequest<AuthResponse>(
-        authMode === "login" ? "/Auth/login" : "/Auth/register",
-        {
-          method: "POST",
-          body: JSON.stringify(
-            authMode === "login"
-              ? { email, password }
-              : { email, password, role }
-          ),
-        }
-      );
+      const data = await apiRequest<AuthResponse>("/Auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (
+        selectedAccess &&
+        !selectedAccess.roles.includes(data.role)
+      ) {
+        setMessage(`Este usuario tiene rol ${data.role}. Debe ingresar por ${selectedAccess.label}.`);
+        return;
+      }
+
+      if (data.mustChangePassword) {
+        setPendingAuth(data);
+        setCurrentTemporaryPassword(password);
+        setAuthMode("forceChange");
+        setMessage("Tu clave es temporal. Crea una contraseña personal para continuar.");
+        return;
+      }
 
       persistAuth(data);
       setEmail("");
       setPassword("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Error desconocido");
+    }
+  }
+
+  async function handleChangeTemporaryPassword(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!pendingAuth) {
+      setAuthMode("login");
+      setMessage("Vuelve a iniciar sesión con la clave temporal.");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setMessage("La confirmación no coincide con la nueva contraseña.");
+      return;
+    }
+
+    setMessage("Guardando contraseña personal...");
+
+    try {
+      await apiRequest<void>("/Auth/change-my-temporary-password", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${pendingAuth.token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: currentTemporaryPassword,
+          newPassword,
+        }),
+      });
+
+      persistAuth({ ...pendingAuth, mustChangePassword: false });
+      setPassword("");
+      setCurrentTemporaryPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setPendingAuth(null);
+      setAuthMode("login");
+      setEmail("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Error al cambiar contraseña");
     }
   }
 
@@ -174,70 +262,119 @@ function App() {
   if (!auth) {
     return (
       <main className="auth-page">
-        <section className="auth-card">
-          <div className="brand-mark">CP</div>
-          <h1>ClinicaProNV</h1>
-          <p>Sistema operativo clínico</p>
+        <section className="auth-stage">
+          <div className="auth-welcome">
+            <img className="auth-welcome-logo" src="/clininova-logo.png" alt="CLININOVA" />
+            <h1>Bienvenido</h1>
+            <p>Sistema integral de gestión clínica</p>
 
-          <div className="segmented" aria-label="Modo de acceso">
-            <button
-              className={authMode === "login" ? "active" : ""}
-              onClick={() => setAuthMode("login")}
-              type="button"
-            >
-              Ingresar
-            </button>
-            <button
-              className={authMode === "register" ? "active" : ""}
-              onClick={() => setAuthMode("register")}
-              type="button"
-            >
-              Registrar
-            </button>
+            <div className="auth-feature-grid" aria-label="Módulos principales">
+              {authAccessItems.map((item) => (
+                <button
+                  key={item.label}
+                  className={selectedAccess.label === item.label ? "active" : ""}
+                  type="button"
+                  onClick={() => {
+                    setSelectedAccess(item);
+                    setAuthMode("login");
+                    setPendingAuth(null);
+                    setMessage("");
+                  }}
+                >
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <form onSubmit={handleAuth} className="stack-form">
-            <label>
-              Correo
-              <input
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                type="email"
-                autoComplete="email"
-                required
-              />
-            </label>
+          <section className="auth-card">
+            <img className="auth-logo" src="/clininova-logo.png" alt="CLININOVA" />
+            <h2>
+              {authMode === "login"
+                ? `Ingreso ${selectedAccess.label}`
+                : "Crear contraseña personal"}
+            </h2>
+            <p>
+              {authMode === "login"
+                ? `Accede con el usuario y la clave entregada por el sistema`
+                : `La clave temporal vence ${pendingAuth?.temporaryPasswordExpiresAtUtc ? new Date(pendingAuth.temporaryPasswordExpiresAtUtc).toLocaleTimeString() : "en pocos minutos"}`}
+            </p>
 
-            <label>
-              Contraseña
-              <input
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                type="password"
-                autoComplete={authMode === "login" ? "current-password" : "new-password"}
-                required
-              />
-            </label>
-
-            {authMode === "register" && (
+            {authMode === "login" && (
+            <form onSubmit={handleAuth} className="stack-form">
               <label>
-                Rol inicial
-                <select value={role} onChange={(event) => setRole(event.target.value)}>
-                  <option value="Recepcion">Recepción</option>
-                  <option value="Doctor">Doctor</option>
-                  <option value="Enfermeria">Enfermería</option>
-                  <option value="Farmacia">Farmacia</option>
-                  <option value="Cajero">Cajero</option>
-                </select>
+                Correo electrónico
+                <input
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  type="email"
+                  autoComplete="email"
+                  required
+                />
               </label>
+
+              <label>
+                Contraseña
+                <input
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+
+              <button className="primary-button" type="submit">
+                Iniciar sesión
+              </button>
+            </form>
             )}
 
-            <button className="primary-button" type="submit">
-              {authMode === "login" ? "Iniciar sesión" : "Crear cuenta"}
-            </button>
-          </form>
+            {authMode === "forceChange" && (
+            <form onSubmit={handleChangeTemporaryPassword} className="stack-form">
+              <label>
+                Usuario
+                <input
+                  value={pendingAuth?.email ?? email}
+                  type="email"
+                  readOnly
+                  required
+                />
+              </label>
 
-          {message && <p className="form-message">{message}</p>}
+              <label>
+                Nueva contraseña personal
+                <input
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={6}
+                  required
+                />
+              </label>
+
+              <label>
+                Confirmar nueva contraseña
+                <input
+                  value={confirmNewPassword}
+                  onChange={(event) => setConfirmNewPassword(event.target.value)}
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={6}
+                  required
+                />
+              </label>
+
+              <button className="primary-button" type="submit">
+                Entrar con mi nueva contraseña
+              </button>
+            </form>
+            )}
+
+            {message && <p className="form-message">{message}</p>}
+          </section>
         </section>
       </main>
     );
@@ -250,7 +387,7 @@ function App() {
 
   if (!canAccessRoute) {
     return (
-      <Shell auth={auth} onLogout={handleLogout} onNavigate={navigate}>
+      <Shell auth={auth} currentRoute={route} onLogout={handleLogout} onNavigate={navigate}>
         <section className="panel">
           <h1>Acceso restringido</h1>
           <p>Tu rol no tiene permisos para abrir este módulo.</p>
@@ -263,7 +400,7 @@ function App() {
   }
 
   return (
-    <Shell auth={auth} onLogout={handleLogout} onNavigate={navigate}>
+    <Shell auth={auth} currentRoute={route} onLogout={handleLogout} onNavigate={navigate}>
       {route === "/" && (
         <>
           {allowedModules.some((module) => module.path === "/dashboard") && (
@@ -301,30 +438,56 @@ function App() {
 function Shell({
   auth,
   children,
+  currentRoute,
   onLogout,
   onNavigate,
 }: {
   auth: AuthState;
   children: React.ReactNode;
+  currentRoute: string;
   onLogout: () => void;
   onNavigate: (path: string) => void;
 }) {
+  const [menuExpanded, setMenuExpanded] = useState(true);
+  const allowedModules = modules.filter((module) => module.roles.includes(auth.role));
+
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <button className="brand-button" onClick={() => onNavigate("/")}>
-          <span>CP</span>
-          <strong>ClinicaProNV</strong>
-        </button>
+    <div className={`app-shell ${menuExpanded ? "" : "menu-collapsed"}`}>
+      <aside className="sidebar" aria-label="Menú principal">
+        <div className="sidebar-head">
+          <button className="brand-button" onClick={() => onNavigate("/")}>
+            <img src="/clininova-logo.png" alt="" />
+            <span>
+              <strong>CLININOVA</strong>
+              <small>Gestión clínica</small>
+            </span>
+          </button>
+
+          <button
+            className="menu-toggle"
+            type="button"
+            aria-label={menuExpanded ? "Contraer menú" : "Desplegar menú"}
+            onClick={() => setMenuExpanded((current) => !current)}
+          >
+            {menuExpanded ? "‹" : "›"}
+          </button>
+        </div>
 
         <nav>
-          {modules
-            .filter((module) => module.roles.includes(auth.role))
-            .map((module) => (
-              <button key={module.path} onClick={() => onNavigate(module.path)}>
-                {module.title}
-              </button>
-            ))}
+          {allowedModules.map((module) => (
+            <button
+              key={module.path}
+              className={currentRoute === module.path ? "active" : ""}
+              onClick={() => onNavigate(module.path)}
+              title={module.title}
+            >
+              <span className="nav-icon">{module.icon}</span>
+              <span className="nav-copy">
+                <strong>{module.title}</strong>
+                <small>{module.description}</small>
+              </span>
+            </button>
+          ))}
         </nav>
       </aside>
 

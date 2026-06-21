@@ -2,7 +2,7 @@ namespace ClinicaProNV.Api.Services.WhatsApp;
 
 public interface IWhatsAppSender
 {
-    Task SendTemplateAsync(
+    Task<bool> SendTemplateAsync(
         string to,
         string templateName,
         IReadOnlyList<string> bodyParameters,

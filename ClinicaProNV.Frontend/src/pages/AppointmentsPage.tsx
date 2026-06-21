@@ -236,7 +236,7 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
     }
 
     function buildAppointmentMessage(appointment: Appointment) {
-        return `Cita médica ClinicaProNV\nPaciente: ${appointment.patientName ?? appointment.patientId}\nDoctor: ${appointment.doctorName ?? appointment.doctorId}${appointment.doctorSpecialty ? ` - ${appointment.doctorSpecialty}` : ""}\nFecha: ${new Date(appointment.date).toLocaleString()}\nMotivo: ${appointment.reason}\nEstado: ${getStatusLabel(appointment.status)}\n\nPor favor llegue 15 minutos antes.`;
+        return `Cita médica CLININOVA\nPaciente: ${appointment.patientName ?? appointment.patientId}\nDoctor: ${appointment.doctorName ?? appointment.doctorId}${appointment.doctorSpecialty ? ` - ${appointment.doctorSpecialty}` : ""}\nFecha: ${new Date(appointment.date).toLocaleString()}\nMotivo: ${appointment.reason}\nEstado: ${getStatusLabel(appointment.status)}\n\nPor favor llegue 15 minutos antes.`;
     }
 
     function handleEmailAppointment(appointment: Appointment) {
@@ -266,7 +266,7 @@ export function AppointmentsPage({ onBack }: AppointmentsPageProps) {
 
         if (navigator.share) {
             await navigator.share({
-                title: "Cita médica ClinicaProNV",
+                title: "Cita médica CLININOVA",
                 text,
             });
             return;

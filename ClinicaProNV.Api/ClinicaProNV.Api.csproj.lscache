@@ -55,44 +55,59 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 /warnaserror+:NU1605,SYSLIB0011
 
 [sourceFiles]
-Contracts/ClinicalNotes/
- CreateClinicalNoteRequest.cs
- UpdateClinicalNoteRequest.cs
-Contracts/ClinicInvoices/
- CreateClinicInvoiceDetailRequest.cs
- CreateClinicInvoiceRequest.cs
-Contracts/Doctors/
- CreateDoctorRequest.cs
- UpdateDoctorRequest.cs
-Contracts/Medicines/
- CreateMedicineRequest.cs
- UpdateMedicineRequest.cs
-Contracts/Patients/
- CreatePatientRequest.cs
- UpdatePatientRequest.cs
+Contracts/
+ Appointments/UpdateAppointmentRequest.cs
+ ClinicalNotes/
+  CreateClinicalNoteRequest.cs
+  UpdateClinicalNoteRequest.cs
+ ClinicInvoices/
+  CreateClinicInvoiceDetailRequest.cs
+  CreateClinicInvoiceRequest.cs
+ Doctors/
+  CreateDoctorRequest.cs
+  UpdateDoctorRequest.cs
+ Medicines/
+  CreateMedicineRequest.cs
+  UpdateMedicineRequest.cs
+ Patients/
+  CreatePatientRecordRequest.cs
+  CreatePatientRequest.cs
+  UpdatePatientRequest.cs
+ Prescriptions/
+  CreatePrescriptionDetailRequest.cs
+  CreatePrescriptionRequest.cs
 Controllers/
  Admin/AdminController.cs
  Appointments/AppointmentsController.cs
  Auth/AuthController.cs
  ClinicalNotes/ClinicalNotesController.cs
  ClinicInvoices/ClinicInvoicesController.cs
+ Dashboard/DashboardController.cs
  Doctors/DoctorsController.cs
  Medicines/MedicinesController.cs
+ Notifications/NotificationsController.cs
  Patients/PatientsController.cs
  Pharmacy/PharmacyInvoiceController.cs
+ Prescriptions/PrescriptionsController.cs
 Middlewares/ExceptionHandlingMiddleware.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
  ClinicaProNV.Api.AssemblyInfo.cs
  ClinicaProNV.Api.GlobalUsings.g.cs
 Program.cs
+Services/WhatsApp/
+ IWhatsAppSender.cs
+ MetaWhatsAppSender.cs
+ WhatsAppNotificationService.cs
+ WhatsAppOptions.cs
+ WhatsAppTemplates.cs
 
 [metadataReferences]
 ../
  ClinicaProNV.Application/obj/Debug/net10.0/ref/ClinicaProNV.Application.dll
  ClinicaProNV.Domain/obj/Debug/net10.0/ref/ClinicaProNV.Domain.dll
  ClinicaProNV.Infrastructure/obj/Debug/net10.0/ref/ClinicaProNV.Infrastructure.dll
-<DOTNET>/packs/Microsoft.AspNetCore.App.Ref/10.0.7/ref/net10.0/
+<DOTNET>/packs/Microsoft.AspNetCore.App.Ref/10.0.8/ref/net10.0/
  Microsoft.AspNetCore.Antiforgery.dll
  Microsoft.AspNetCore.Authentication.Abstractions.dll
  Microsoft.AspNetCore.Authentication.BearerToken.dll
@@ -233,7 +248,7 @@ Program.cs
  System.Formats.Cbor.dll
  System.Security.Cryptography.Xml.dll
  System.Threading.RateLimiting.dll
-<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.7/ref/net10.0/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.8/ref/net10.0/
  Microsoft.CSharp.dll
  Microsoft.VisualBasic.Core.dll
  Microsoft.VisualBasic.dll
@@ -454,7 +469,7 @@ Program.cs
  system.windows.extensions/9.0.0/lib/net9.0/System.Windows.Extensions.dll
 
 [analyzerReferences]
-<DOTNET>/packs/Microsoft.AspNetCore.App.Ref/10.0.7/analyzers/dotnet/cs/
+<DOTNET>/packs/Microsoft.AspNetCore.App.Ref/10.0.8/analyzers/dotnet/cs/
  Microsoft.AspNetCore.App.Analyzers.dll
  Microsoft.AspNetCore.App.CodeFixes.dll
  Microsoft.AspNetCore.App.SourceGenerators.dll
@@ -462,21 +477,21 @@ Program.cs
  Microsoft.Extensions.Logging.Generators.dll
  Microsoft.Extensions.Options.SourceGeneration.dll
  Microsoft.Extensions.Validation.ValidationsGenerator.dll
-<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.7/analyzers/dotnet/cs/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.8/analyzers/dotnet/cs/
  Microsoft.Interop.ComInterfaceGenerator.dll
  Microsoft.Interop.JavaScript.JSImportGenerator.dll
  Microsoft.Interop.LibraryImportGenerator.dll
  Microsoft.Interop.SourceGeneration.dll
  System.Text.Json.SourceGeneration.dll
  System.Text.RegularExpressions.Generator.dll
-<DOTNET>/sdk/10.0.107/Sdks/Microsoft.NET.Sdk.Razor/source-generators/
+<DOTNET>/sdk/10.0.108/Sdks/Microsoft.NET.Sdk.Razor/source-generators/
  Microsoft.AspNetCore.Razor.Utilities.Shared.dll
  Microsoft.CodeAnalysis.Razor.Compiler.dll
  Microsoft.Extensions.ObjectPool.dll
-<DOTNET>/sdk/10.0.107/Sdks/Microsoft.NET.Sdk.Web/analyzers/cs/
+<DOTNET>/sdk/10.0.108/Sdks/Microsoft.NET.Sdk.Web/analyzers/cs/
  Microsoft.AspNetCore.Analyzers.dll
  Microsoft.AspNetCore.Mvc.Analyzers.dll
-<DOTNET>/sdk/10.0.107/Sdks/Microsoft.NET.Sdk/analyzers/
+<DOTNET>/sdk/10.0.108/Sdks/Microsoft.NET.Sdk/analyzers/
  Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
  Microsoft.CodeAnalysis.NetAnalyzers.dll
 <NUGET>/microsoft.codeanalysis.analyzers/3.11.0/analyzers/dotnet/cs/
@@ -485,5 +500,5 @@ Program.cs
 <NUGET>/microsoft.entityframeworkcore.analyzers/10.0.4/analyzers/dotnet/cs/Microsoft.EntityFrameworkCore.Analyzers.dll
 
 [analyzerConfigFiles]
-<DOTNET>/sdk/10.0.107/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
+<DOTNET>/sdk/10.0.108/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
 obj/Debug/net10.0/ClinicaProNV.Api.GeneratedMSBuildEditorConfig.editorconfig

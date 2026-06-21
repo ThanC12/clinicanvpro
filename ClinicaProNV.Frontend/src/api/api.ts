@@ -18,7 +18,9 @@ export async function apiRequest<T>(
   const text = await response.text();
 
   if (!response.ok) {
-    if (response.status === 401) {
+    const isAuthRequest = endpoint.toLowerCase().startsWith("/auth/");
+
+    if (response.status === 401 && !isAuthRequest) {
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("email");

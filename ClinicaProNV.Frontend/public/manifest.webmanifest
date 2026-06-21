@@ -1,6 +1,6 @@
 {
-  "name": "ClinicaProNV",
-  "short_name": "ClinicaProNV",
+  "name": "CLININOVA",
+  "short_name": "CLININOVA",
   "description": "Gestión clínica, citas, recetas, farmacia y facturación.",
   "start_url": "/",
   "display": "standalone",
@@ -8,9 +8,9 @@
   "theme_color": "#0f766e",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/clininova-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

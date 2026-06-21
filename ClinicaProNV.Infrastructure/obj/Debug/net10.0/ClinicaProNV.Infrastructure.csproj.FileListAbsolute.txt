@@ -18,3 +18,7 @@ C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ClinicaProNV.Infrastructure.pdb
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ClinicaProNV.Infrastructure.genruntimeconfig.cache
 C:\Users\thanc\Desktop\ClinicaProNV\ClinicaProNV.Infrastructure\obj\Debug\net10.0\ref\ClinicaProNV.Infrastructure.dll
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Infrastructure.deps.json
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Infrastructure.runtimeconfig.json
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Infrastructure.dll
+C:\Users\thanc\Desktop\ClinicaProNV\.build\verify-api\ClinicaProNV.Infrastructure.pdb

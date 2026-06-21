@@ -3,8 +3,11 @@ using ClinicaProNV.Application.Security;
 using ClinicaProNV.Application.UseCases.Auth;
 using ClinicaProNV.Infrastructure.Persistence.Context;
 using ClinicaProNV.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 
 namespace ClinicaProNV.Api.Controllers;
@@ -51,6 +54,7 @@ public class AuthController : ControllerBase
 
         return Ok(new { email, password = "Admin123*", role = "Admin" });
     }
+    [Authorize(Roles = "Admin")]
     [HttpPost("register")]
     public async Task<IActionResult> Register(
         [FromBody] RegisterRequestDto req,
@@ -68,8 +72,148 @@ public class AuthController : ControllerBase
         [FromServices] LoginUseCase login,
         [FromServices] IJwtTokenGenerator jwt)
     {
-        var (userId, email, role) = await login.ExecuteAsync(req);
+        var (userId, email, role, mustChangePassword, temporaryPasswordExpiresAtUtc) = await login.ExecuteAsync(req);
         var token = jwt.GenerateToken(userId.ToString(), email, role);
-        return Ok(new AuthResponseDto(userId, email, role, token));
+        return Ok(new AuthResponseDto(
+            userId,
+            email,
+            role,
+            token,
+            mustChangePassword,
+            temporaryPasswordExpiresAtUtc));
     }
+
+    [Authorize]
+    [HttpPost("change-my-temporary-password")]
+    public async Task<IActionResult> ChangeMyTemporaryPassword(
+        [FromBody] ChangeMyTemporaryPasswordRequest request,
+        [FromServices] ClinicaProNVDbContext db,
+        [FromServices] IPasswordHasher hasher,
+        CancellationToken ct)
+    {
+        if (request is null)
+        {
+            return BadRequest("El cuerpo de la solicitud es obligatorio.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
+            string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest("La contraseña temporal y la nueva contraseña son obligatorias.");
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            return BadRequest("La nueva contraseña debe tener al menos 6 caracteres.");
+        }
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+        {
+            return Unauthorized("Token inválido.");
+        }
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null || !user.IsActive)
+        {
+            return Unauthorized("Usuario inválido.");
+        }
+
+        if (!user.HasTemporaryPassword || user.TemporaryPasswordExpiresAtUtc is null)
+        {
+            return BadRequest("Este usuario no tiene contraseña temporal activa.");
+        }
+
+        if (user.TemporaryPasswordExpiresAtUtc <= DateTime.UtcNow)
+        {
+            return BadRequest("La contraseña temporal expiró. Solicite una nueva al administrador.");
+        }
+
+        if (!hasher.Verify(request.CurrentPassword, user.PasswordHash))
+        {
+            return BadRequest("La contraseña temporal no es correcta.");
+        }
+
+        user.ChangePassword(hasher.Hash(request.NewPassword));
+        await db.SaveChangesAsync(ct);
+
+        return NoContent();
+    }
+
+    [HttpPost("change-temporary-password")]
+    public async Task<IActionResult> ChangeTemporaryPassword(
+        [FromBody] ChangeTemporaryPasswordRequest request,
+        [FromServices] ClinicaProNVDbContext db,
+        [FromServices] IPasswordHasher hasher,
+        CancellationToken ct)
+    {
+        if (request is null)
+        {
+            return BadRequest("El cuerpo de la solicitud es obligatorio.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.PhoneNumber) ||
+            string.IsNullOrWhiteSpace(request.TemporaryPassword) ||
+            string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest("Correo, teléfono, contraseña temporal y nueva contraseña son obligatorios.");
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            return BadRequest("La nueva contraseña debe tener al menos 6 caracteres.");
+        }
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        var phone = NormalizePhone(request.PhoneNumber);
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+        if (user is null || !user.IsActive)
+        {
+            return BadRequest("Datos inválidos.");
+        }
+
+        if (!user.HasTemporaryPassword || user.TemporaryPasswordExpiresAtUtc is null)
+        {
+            return BadRequest("Este usuario no tiene contraseña temporal activa.");
+        }
+
+        if (user.TemporaryPasswordExpiresAtUtc <= DateTime.UtcNow)
+        {
+            return BadRequest("La contraseña temporal expiró. Solicite una nueva al administrador.");
+        }
+
+        if (NormalizePhone(user.PhoneNumber) != phone)
+        {
+            return BadRequest("El teléfono no coincide con el usuario.");
+        }
+
+        if (!hasher.Verify(request.TemporaryPassword, user.PasswordHash))
+        {
+            return BadRequest("La contraseña temporal no es correcta.");
+        }
+
+        user.ChangePassword(hasher.Hash(request.NewPassword));
+        await db.SaveChangesAsync(ct);
+
+        return NoContent();
+    }
+
+    private static string NormalizePhone(string value)
+    {
+        return new string((value ?? string.Empty).Where(char.IsDigit).ToArray());
+    }
+
+    public sealed record ChangeTemporaryPasswordRequest(
+        string Email,
+        string PhoneNumber,
+        string TemporaryPassword,
+        string NewPassword);
+
+    public sealed record ChangeMyTemporaryPasswordRequest(
+        string CurrentPassword,
+        string NewPassword);
 }
