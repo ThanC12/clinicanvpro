@@ -83,6 +83,34 @@ public class AuthController : ControllerBase
             temporaryPasswordExpiresAtUtc));
     }
 
+    [HttpPost("subscribe")]
+    public async Task<IActionResult> Subscribe(
+        [FromBody] SubscribeRequestDto req,
+        [FromServices] RegisterUseCase register,
+        [FromServices] IJwtTokenGenerator jwt)
+    {
+        if (req is null)
+        {
+            return BadRequest("El cuerpo de la solicitud es obligatorio.");
+        }
+
+        if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Password))
+        {
+            return BadRequest("Correo y contraseña son obligatorios.");
+        }
+
+        if (req.Password.Length < 6)
+        {
+            return BadRequest("La contraseña debe tener al menos 6 caracteres.");
+        }
+
+        var registerRequest = new RegisterRequestDto(req.Email.Trim(), req.Password, "Recepcion");
+        var (userId, email, role) = await register.ExecuteAsync(registerRequest);
+        var token = jwt.GenerateToken(userId.ToString(), email, role);
+
+        return Ok(new AuthResponseDto(userId, email, role, token));
+    }
+
     [Authorize]
     [HttpPost("change-my-temporary-password")]
     public async Task<IActionResult> ChangeMyTemporaryPassword(

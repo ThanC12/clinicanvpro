@@ -233,6 +233,22 @@
   font-weight: 700;
 }
 
+.auth-switch {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e3eef2;
+}
+
+.auth-switch button {
+  border: 0;
+  background: transparent;
+  color: #0d6eb8;
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
