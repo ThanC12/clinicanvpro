@@ -126,13 +126,10 @@ function getStoredAuth(): AuthState | null {
 function App() {
   const [auth, setAuth] = useState<AuthState | null>(() => getStoredAuth());
   const [route, setRoute] = useState(() => window.location.pathname);
-  const [authMode, setAuthMode] = useState<"login" | "forceChange" | "subscribe">("login");
+  const [authMode, setAuthMode] = useState<"login" | "forceChange">("login");
   const [pendingAuth, setPendingAuth] = useState<AuthResponse | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [subscribeEmail, setSubscribeEmail] = useState("");
-  const [subscribePassword, setSubscribePassword] = useState("");
-  const [confirmSubscribePassword, setConfirmSubscribePassword] = useState("");
   const [currentTemporaryPassword, setCurrentTemporaryPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -253,35 +250,6 @@ function App() {
     }
   }
 
-  async function handleSubscribe(event: React.FormEvent) {
-    event.preventDefault();
-
-    if (subscribePassword !== confirmSubscribePassword) {
-      setMessage("La confirmación no coincide con la contraseña.");
-      return;
-    }
-
-    setMessage("Creando suscripción...");
-
-    try {
-      const data = await apiRequest<AuthResponse>("/Auth/subscribe", {
-        method: "POST",
-        body: JSON.stringify({
-          email: subscribeEmail,
-          password: subscribePassword,
-        }),
-      });
-
-      persistAuth(data);
-      setSubscribeEmail("");
-      setSubscribePassword("");
-      setConfirmSubscribePassword("");
-      setAuthMode("login");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Error al crear la suscripción");
-    }
-  }
-
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -323,15 +291,14 @@ function App() {
           <section className="auth-card">
             <img className="auth-logo" src="/clininova-logo.png" alt="CLININOVA" />
             <h2>
-              {authMode === "login" && `Ingreso ${selectedAccess.label}`}
-              {authMode === "forceChange" && "Crear contraseña personal"}
-              {authMode === "subscribe" && "Suscribirse"}
+              {authMode === "login"
+                ? `Ingreso ${selectedAccess.label}`
+                : "Crear contraseña personal"}
             </h2>
             <p>
-              {authMode === "login" && "Accede con el usuario y la clave entregada por el sistema"}
-              {authMode === "forceChange" &&
-                `La clave temporal vence ${pendingAuth?.temporaryPasswordExpiresAtUtc ? new Date(pendingAuth.temporaryPasswordExpiresAtUtc).toLocaleTimeString() : "en pocos minutos"}`}
-              {authMode === "subscribe" && "Crea tu acceso inicial para empezar con recepción"}
+              {authMode === "login"
+                ? "Accede con el usuario y la clave entregada por el sistema"
+                : `La clave temporal vence ${pendingAuth?.temporaryPasswordExpiresAtUtc ? new Date(pendingAuth.temporaryPasswordExpiresAtUtc).toLocaleTimeString() : "en pocos minutos"}`}
             </p>
 
             {authMode === "login" && (
@@ -360,49 +327,6 @@ function App() {
 
               <button className="primary-button" type="submit">
                 Iniciar sesión
-              </button>
-            </form>
-            )}
-
-            {authMode === "subscribe" && (
-            <form onSubmit={handleSubscribe} className="stack-form">
-              <label>
-                Correo electrónico
-                <input
-                  value={subscribeEmail}
-                  onChange={(event) => setSubscribeEmail(event.target.value)}
-                  type="email"
-                  autoComplete="email"
-                  required
-                />
-              </label>
-
-              <label>
-                Contraseña
-                <input
-                  value={subscribePassword}
-                  onChange={(event) => setSubscribePassword(event.target.value)}
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={6}
-                  required
-                />
-              </label>
-
-              <label>
-                Confirmar contraseña
-                <input
-                  value={confirmSubscribePassword}
-                  onChange={(event) => setConfirmSubscribePassword(event.target.value)}
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={6}
-                  required
-                />
-              </label>
-
-              <button className="primary-button" type="submit">
-                Crear suscripción
               </button>
             </form>
             )}
@@ -450,31 +374,6 @@ function App() {
             )}
 
             {message && <p className="form-message">{message}</p>}
-
-            <div className="auth-switch">
-              {authMode === "subscribe" ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode("login");
-                    setMessage("");
-                  }}
-                >
-                  Ya tengo cuenta
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode("subscribe");
-                    setPendingAuth(null);
-                    setMessage("");
-                  }}
-                >
-                  Suscribirse
-                </button>
-              )}
-            </div>
           </section>
         </section>
       </main>
@@ -504,6 +403,8 @@ function App() {
     <Shell auth={auth} currentRoute={route} onLogout={handleLogout} onNavigate={navigate}>
       {route === "/" && (
         <>
+          <WorkflowOverview role={auth.role} onNavigate={navigate} />
+
           {allowedModules.some((module) => module.path === "/dashboard") && (
             <DashboardPage onNavigate={navigate} />
           )}
@@ -533,6 +434,89 @@ function App() {
       {selectedModule?.path === "/facturacion" && <BillingPage {...pageProps} />}
       {selectedModule?.path === "/usuarios" && <UsersPage {...pageProps} />}
     </Shell>
+  );
+}
+
+const patientFlowSteps = [
+  {
+    title: "Recepción",
+    detail: "Buscar por cédula, registrar si no existe y generar código de espera.",
+    path: "/pacientes",
+    roles: ["Admin", "Recepcion"],
+  },
+  {
+    title: "Triaje",
+    detail: "Enfermería toma signos vitales y deja listo el paciente para consulta.",
+    path: "/historias-clinicas",
+    roles: ["Admin", "Enfermeria"],
+  },
+  {
+    title: "Asignación",
+    detail: "El sistema asigna doctor y el médico llama al paciente.",
+    path: "/citas",
+    roles: ["Admin", "Recepcion", "Doctor", "Enfermeria"],
+  },
+  {
+    title: "Consulta médica",
+    detail: "Registrar dolencias, diagnóstico, tratamiento e historia clínica.",
+    path: "/historias-clinicas",
+    roles: ["Admin", "Doctor"],
+  },
+  {
+    title: "Receta",
+    detail: "El doctor genera la receta y queda asociada a la cédula del paciente.",
+    path: "/historias-clinicas",
+    roles: ["Admin", "Doctor"],
+  },
+  {
+    title: "Farmacia",
+    detail: "Buscar por cédula, ver receta, entregar o imprimir medicamentos.",
+    path: "/farmacia",
+    roles: ["Admin", "Farmacia"],
+  },
+  {
+    title: "Finalización",
+    detail: "Cerrar la atención cuando farmacia o caja completan el proceso.",
+    path: "/facturacion",
+    roles: ["Admin", "Cajero", "Farmacia"],
+  },
+];
+
+function WorkflowOverview({
+  role,
+  onNavigate,
+}: {
+  role: string;
+  onNavigate: (path: string) => void;
+}) {
+  return (
+    <section className="workflow-panel" aria-label="Flujo de atención del paciente">
+      <div className="workflow-head">
+        <div>
+          <span>Flujo de atención</span>
+          <h1>Paciente desde recepción hasta farmacia</h1>
+        </div>
+      </div>
+
+      <div className="workflow-steps">
+        {patientFlowSteps.map((step, index) => (
+          <article className="workflow-step" key={step.title}>
+            <span className="workflow-number">{index + 1}</span>
+            <div>
+              <h2>{step.title}</h2>
+              <p>{step.detail}</p>
+            </div>
+            {step.roles.includes(role) ? (
+              <button type="button" onClick={() => onNavigate(step.path)}>
+                Abrir
+              </button>
+            ) : (
+              <span className="workflow-role-note">Otro rol</span>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
